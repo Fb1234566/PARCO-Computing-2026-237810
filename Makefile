@@ -64,7 +64,7 @@ datasets: $(LIST_FILE)
 		archive_path="$(DATASET_DIR)/$$fname"; \
 		if command -v wget >/dev/null 2>&1; then \
 			echo "Scarico $$url"; \
-			wget -q --show-progress -c -P "$(DATASET_DIR)" "$$url"; \
+			wget -q -c -P "$(DATASET_DIR)" "$$url"; \
 		elif command -v curl >/dev/null 2>&1; then \
 			echo "Scarico $$url"; \
 			curl -L --fail --retry 3 -o "$$archive_path" "$$url"; \
