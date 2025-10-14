@@ -4,16 +4,19 @@
 #include <random>
 #include <iostream>
 #include <iomanip>
+#include <chrono>
 
 SpMVSerial::SpMVSerial(const map<std::string, vector<float> > &m, const vector<float> &v): SpVMInterface(m, v) {
 }
 
 vector<float> SpMVSerial::computeMultiplication() const {
+    using namespace std::chrono;
+    auto start = high_resolution_clock::now();
+
     const vector<float> &values = matrix.at("vals");
     const vector<float> &rowPointer = matrix.at("rowPointer");
     const vector<float> &colIndex = matrix.at("elemIndex");
     vector<float> result(rowPointer.size() - 1, 0.0f);
-
 
     utils::PrintUtils::printColored("Starting serial SpVM...", utils::PrintUtils::TerminalColor::CYAN);
 
@@ -26,11 +29,14 @@ vector<float> SpMVSerial::computeMultiplication() const {
         result[row] = partial_sum;
     }
 
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(end - start).count();
+    std::cout << "Tempo di esecuzione: " << duration << " ms" << std::endl;
+
     utils::PrintUtils::printColored("Multiplication complete!", utils::PrintUtils::TerminalColor::GREEN);
 
     return result;
 }
-
 void SpMVSerial::runMultiplications(const bool &randomVector) {
     const vector<float> &rowPointer = matrix.at("rowPointer");
 
