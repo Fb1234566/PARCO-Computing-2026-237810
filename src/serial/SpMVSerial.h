@@ -13,9 +13,10 @@ using namespace std;
 class SpMVSerial: public SpVMInterface {
 public:
         SpMVSerial() = default;
-        explicit SpMVSerial(const std::map<std::string, vector<float>> &m, const vector<float> &v);
+        SpMVSerial(const string& n);
+        explicit SpMVSerial(const string& n, const utils::CSRMatrix &m, const vector<float> &v);
         vector<float> computeMultiplication() const override;
-        void runMultiplications(const bool& randomVector) override;
+        void runMultiplications() override;
 };
 
 

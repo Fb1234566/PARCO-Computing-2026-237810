@@ -1,6 +1,6 @@
 # Compilatore e flag
 CXX       := g++
-CXXFLAGS  := -std=c++11 -Wall -Wextra -Wpedantic -O0 -g -I.
+CXXFLAGS  := -std=c++20 -Wall -Wextra -Wpedantic -O0 -g -I.
 LDFLAGS   :=
 LDLIBS    :=
 

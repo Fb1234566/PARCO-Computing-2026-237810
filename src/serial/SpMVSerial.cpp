@@ -6,49 +6,30 @@
 #include <iomanip>
 #include <chrono>
 
-SpMVSerial::SpMVSerial(const map<std::string, vector<float> > &m, const vector<float> &v): SpVMInterface(m, v) {
+SpMVSerial::SpMVSerial(const string& n, const utils::CSRMatrix &m, const vector<float> &v): SpVMInterface(n, m, v) {
 }
 
 vector<float> SpMVSerial::computeMultiplication() const {
-    using namespace std::chrono;
-    auto start = high_resolution_clock::now();
 
-    const vector<float> &values = matrix.at("vals");
-    const vector<float> &rowPointer = matrix.at("rowPointer");
-    const vector<float> &colIndex = matrix.at("elemIndex");
+    const vector<float> &values = matrix.val;
+    const vector<int> &rowPointer = matrix.rowPointer;
+    const vector<int> &colIndex = matrix.colIndex;
     vector<float> result(rowPointer.size() - 1, 0.0f);
-
-    utils::PrintUtils::printColored("Starting serial SpVM...", utils::PrintUtils::TerminalColor::CYAN);
 
     for (int row = 0; row < rowPointer.size() - 1; ++row) {
         float partial_sum = 0.0f;
-        for (int idx = static_cast<int>(rowPointer[row]); idx < static_cast<int>(rowPointer[row + 1]); ++idx) {
-            const int col = static_cast<int>(colIndex[idx]);
+        for (int idx = rowPointer[row]; idx < rowPointer[row + 1]; ++idx) {
+            const int col = colIndex[idx];
             partial_sum += denseVector[col] * values[idx];
         }
         result[row] = partial_sum;
     }
-
-    auto end = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(end - start).count();
-    std::cout << "Tempo di esecuzione: " << duration << " ms" << std::endl;
-
-    utils::PrintUtils::printColored("Multiplication complete!", utils::PrintUtils::TerminalColor::GREEN);
-
     return result;
 }
-void SpMVSerial::runMultiplications(const bool &randomVector) {
-    const vector<float> &rowPointer = matrix.at("rowPointer");
-
-    if (randomVector) {
-        utils::PrintUtils::printColored("Generating dense vector...", utils::PrintUtils::TerminalColor::CYAN);
-        denseVector = generateRandomDenseVector(rowPointer.size() - 1);
-        utils::PrintUtils::printColored("Dense vector generated.", utils::PrintUtils::TerminalColor::GREEN);
-    }
-
+void SpMVSerial::runMultiplications() {
     result = computeMultiplication();
-    utils::PrintUtils::printColored("Result saved as correct.", utils::PrintUtils::TerminalColor::GREEN);
-
 
 }
 
+SpMVSerial::SpMVSerial(const string& n): SpVMInterface(n){
+}

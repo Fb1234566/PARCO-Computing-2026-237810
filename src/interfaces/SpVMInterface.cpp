@@ -3,11 +3,13 @@
 //
 
 #include "SpVMInterface.h"
-SpVMInterface::SpVMInterface(const map<std::string, vector<float> > &m, const vector<float> &v): matrix(m), denseVector(v) {
+
+#include <utility>
+SpVMInterface::SpVMInterface(string  n, utils::CSRMatrix m, const vector<float> &v): modelName(std::move(n)), matrix(std::move(m)), denseVector(v){
 }
 
-void SpVMInterface::setMatrix(const map<std::string, vector<float> > &m) {
-    matrix = m;
+void SpVMInterface::setMatrix(utils::CSRMatrix m) {
+    matrix = std::move(m);
 }
 
 void SpVMInterface::setDenseVector(const vector<float> &v) {
@@ -23,4 +25,11 @@ vector<float> SpVMInterface::generateRandomDenseVector(size_t n) {
         vec[i] = dist(gen);
     }
     return vec;
+}
+
+SpVMInterface::SpVMInterface(const string& n): modelName(n){
+}
+
+bool SpVMInterface::checkCorrectness(const vector<float> &v) {
+    return true; // placeholder
 }

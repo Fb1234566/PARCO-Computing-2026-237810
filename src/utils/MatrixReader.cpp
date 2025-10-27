@@ -8,10 +8,10 @@
 using namespace std;
 
 namespace utils {
-    map<string, vector<float> > MatrixReader::operator()(const string &path) const {
+    CSRMatrix MatrixReader::operator()(const string &path) const {
         // const vector<vector<float> > matrix = readMatrix(path);
         set<COOEntry> coo = readMatrixCOO(path);
-        map<string, vector<float> > csrMatrix = CooMatrixToCSR(coo);
+        CSRMatrix csrMatrix = CooMatrixToCSR(coo, path);
         return csrMatrix;
     }
 
@@ -24,7 +24,6 @@ namespace utils {
         }
         return counter;
     }
-
 
     set<COOEntry> MatrixReader::readMatrixCOO(const string &filename) {
         ifstream MatrixFile(filename);
@@ -87,48 +86,90 @@ namespace utils {
         return false;
     }
 
-    map<string, vector<float> > MatrixReader::CooMatrixToCSR(const set<COOEntry> &coo) {
+    CSRMatrix MatrixReader::CooMatrixToCSR(const set<COOEntry> &s, const string &filename) {
         PrintUtils::printColored("Starting COO to CSR conversion...", PrintUtils::TerminalColor::CYAN);
 
-        map<string, vector<float> > csr;
-        if (coo.empty()) return csr;
+        CSRMatrix csr;
+        if (s.empty()) return csr;
+        const int maxRow = getMatrixDimensions(filename)[0];
 
-        int maxRow = 0;
-        for (const auto &e: coo) {
-            if (e.row > maxRow) maxRow = e.row;
-        }
-
-        csr["vals"] = vector<float>();
-        csr["elemIndex"] = vector<float>();
-        csr["rowPointer"] = vector<float>(maxRow + 1, 0.0f);
+        csr.val = vector<float>();
+        csr.colIndex = vector<int>();
+        csr.rowPointer = vector<int>(maxRow + 1, 0);
 
         vector<int> rowCounts(maxRow, 0);
-        for (const auto &e: coo) {
+        for (const auto &e: s) {
             rowCounts[e.row - 1]++;
         }
 
         for (int i = 1; i <= maxRow; ++i) {
-            csr["rowPointer"][i] = csr["rowPointer"][i - 1] + static_cast<float>(rowCounts[i - 1]);
+            csr.rowPointer[i] = csr.rowPointer[i - 1] + rowCounts[i - 1];
         }
 
         vector<int> insertPos = rowCounts;
         for (int i = 0; i < maxRow; ++i) {
-            insertPos[i] = static_cast<int>(csr["rowPointer"][i]);
+            insertPos[i] = csr.rowPointer[i];
         }
-        int nnz = coo.size();
-        csr["vals"].resize(nnz);
-        csr["elemIndex"].resize(nnz);
+        int nnz = s.size();
+        csr.val.resize(nnz);
+        csr.colIndex.resize(nnz);
 
-        for (const auto &e: coo) {
+        for (const auto &e: s) {
             const int row = e.row - 1;
             const int pos = insertPos[row]++;
-            if (row < 0 || row >= maxRow) {
-                csr["vals"][pos] = e.val;
-                csr["elemIndex"][pos] = static_cast<float>(e.col - 1);
+            if (row >= 0 && row <= maxRow) {
+                csr.val[pos] = e.val;
+                csr.colIndex[pos] = e.col - 1;
             }
         }
         PrintUtils::printColored("COO to CSR conversion completed.", PrintUtils::TerminalColor::GREEN);
-
+        cout << csr << endl;
         return csr;
+    }
+
+    ostream &operator<<(ostream &os, const CSRMatrix &m) {
+        os << "Row pointer: [ ";
+        for (const auto e: m.rowPointer) {
+            os << e << ", ";
+        }
+        os << "]" << endl << "Column index: [ ";
+        for (const auto e: m.colIndex) {
+            os << e << ", ";
+        }
+        os << "]" << endl << "Values: [ ";
+        for (const auto e: m.val) {
+            os << e << ", ";
+        }
+        os << "]" << endl;
+        return os;
+    }
+    vector<int> MatrixReader::getMatrixDimensions(const string& filename) {
+        ifstream MatrixFile(filename);
+
+        if (!MatrixFile.is_open()) {
+            PrintUtils::printColored("Errore: impossibile aprire il file " + filename, PrintUtils::TerminalColor::RED);
+            return {};
+        }
+
+        set<COOEntry> COOMatrix;
+        PrintUtils::printColored("Reading file", PrintUtils::TerminalColor::CYAN);
+        string curr_line;
+        string prev_line = "%";
+        int rows = 0, cols = 0;
+        vector<int> res = {rows, cols};
+
+        while (getline(MatrixFile, curr_line)) {
+            if (!curr_line.empty()) {
+                if (curr_line[0] != '%') {
+                    if (curr_line[0] != '%' && prev_line[0] == '%') {
+                        istringstream iss(curr_line);
+                        int nnz;
+                        iss >> rows >> cols >> nnz;
+                        return vector<int>{rows, cols};
+                    }
+                }
+            }
+        }
+        return res;
     }
 } // utils

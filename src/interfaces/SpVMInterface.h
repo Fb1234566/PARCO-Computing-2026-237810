@@ -10,21 +10,24 @@
 #include <vector>
 #include <random>
 
+#include "../utils/MatrixReader.h"
+
 using namespace std;
 
 class SpVMInterface {
 public:
+    string modelName;
     virtual ~SpVMInterface() = default;
-
+    utils::CSRMatrix matrix;
     SpVMInterface() = default;
-    map<string, vector<float>> matrix;
     vector<float> denseVector;
     vector<float> result;
-    explicit SpVMInterface(const std::map<std::string, vector<float>> &m, const vector<float> &v);
-    void setMatrix(const map<std::string, vector<float>> &m);
+    SpVMInterface(const string& n);
+    explicit SpVMInterface( string  n, utils::CSRMatrix m, const vector<float> &v);
+    void setMatrix(utils::CSRMatrix m);
     void setDenseVector(const vector<float> &v);
     virtual vector<float> computeMultiplication() const = 0;
-    virtual void runMultiplications(const bool& randomVector) = 0;
+    virtual void runMultiplications() = 0;
     static vector<float> generateRandomDenseVector(size_t n);
     bool checkCorrectness(const vector<float>& v);
 };
