@@ -92,10 +92,13 @@ namespace utils {
         CSRMatrix csr;
         if (s.empty()) return csr;
         const int maxRow = getMatrixDimensions(filename)[0];
+        const int maxCols = getMatrixDimensions(filename)[1];
 
         csr.val = vector<float>();
         csr.colIndex = vector<int>();
         csr.rowPointer = vector<int>(maxRow + 1, 0);
+        csr.rows = maxRow;
+        csr.cols = maxCols;
 
         vector<int> rowCounts(maxRow, 0);
         for (const auto &e: s) {
@@ -123,7 +126,6 @@ namespace utils {
             }
         }
         PrintUtils::printColored("COO to CSR conversion completed.", PrintUtils::TerminalColor::GREEN);
-        cout << csr << endl;
         return csr;
     }
 
@@ -152,7 +154,6 @@ namespace utils {
         }
 
         set<COOEntry> COOMatrix;
-        PrintUtils::printColored("Reading file", PrintUtils::TerminalColor::CYAN);
         string curr_line;
         string prev_line = "%";
         int rows = 0, cols = 0;
