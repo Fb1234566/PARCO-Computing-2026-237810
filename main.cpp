@@ -1,42 +1,64 @@
-
 #include <iostream>
 #include <string>
 #include <vector>
-#include <filesystem>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <cerrno>
+#include <cstring>
 
 #include "src/utils/MatrixReader.h"
 #include "src/serial/SpMVSerial.h"
 #include "src/utils/ExecutionStatistics.h"
 
+static void traverse_directory(const std::string& dir, std::vector<std::string>& files) {
+    DIR* dp = opendir(dir.c_str());
+    if (!dp) {
+        std::cerr << "Impossibile aprire directory: " << dir << " (" << std::strerror(errno) << ")\n";
+        return;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dp)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..") continue;
+        std::string full = dir + "/" + name;
+        struct stat st;
+        if (stat(full.c_str(), &st) != 0) {
+            std::cerr << "stat fallito per: " << full << " (" << std::strerror(errno) << ")\n";
+            continue;
+        }
+        if (S_ISDIR(st.st_mode)) {
+            traverse_directory(full, files);
+        } else if (S_ISREG(st.st_mode)) {
+            files.push_back(full);
+        }
+    }
+    closedir(dp);
+}
+
 int main() {
-    namespace fs = std::filesystem;
-    const fs::path dataset_dir = "datasets";
+    const std::string dataset_dir = "datasets";
     SpMVSerial serial;
 
-    try {
-        if (!fs::exists(dataset_dir) || !fs::is_directory(dataset_dir)) {
-            std::cerr << "Directory not found: " << dataset_dir << '\n';
-            return 1;
-        }
+    struct stat st;
+    if (stat(dataset_dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
+        std::cerr << "Directory not found: " << dataset_dir << '\n';
+        return 1;
+    }
 
-        utils::MatrixReader reader;
-        for (auto const& entry : fs::recursive_directory_iterator(dataset_dir)) {
-            if (!entry.is_regular_file()) continue;
+    utils::MatrixReader reader;
+    std::vector<std::string> files;
+    traverse_directory(dataset_dir, files);
 
-            std::cout << "============================\n";
-            auto fullPath = entry.path().string();
-            std::cout << "File: " << fullPath << '\n';
-            serial.modelName = "serial SpMV";
-            serial.setMatrix(reader(fullPath.c_str()));
-            std::vector<float> denseVector(6, 1.0f);
-            serial.setDenseVector(denseVector);
-            utils::ExecutionStatistics stats(serial);
-            stats.run();
-            serial.runMultiplications();
-        }
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Filesystem error: " << e.what() << '\n';
-        return 2;
+    for (const auto& fullPath : files) {
+        std::cout << "============================\n";
+        std::cout << "File: " << fullPath << '\n';
+        serial.modelName = "serial SpMV";
+        serial.setMatrix(reader(fullPath.c_str()));
+        std::vector<float> denseVector(6, 1.0f);
+        serial.setDenseVector(denseVector);
+        utils::ExecutionStatistics stats(serial);
+        stats.run();
+        serial.runMultiplications();
     }
 
     return 0;
