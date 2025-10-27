@@ -12,7 +12,7 @@
 
 #include <utility>
 
-utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface& i):model(i){
+utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i) : model(i) {
 }
 
 void utils::ExecutionStatistics::run() const {
@@ -33,18 +33,20 @@ void utils::ExecutionStatistics::run() const {
         auto t0 = std::chrono::steady_clock::now();
         model.runMultiplications();
         auto t1 = std::chrono::steady_clock::now();
-
+        if (model.checkCorrectness()) {
+            PrintUtils::printColored("Result is correct", PrintUtils::TerminalColor::GREEN);
+        } else {
+            PrintUtils::printColored("Result is incorrect", PrintUtils::TerminalColor::RED);
+        }
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
         if (ms < best_ms) best_ms = ms;
-        sum_ms+=ms;
+        sum_ms += ms;
     }
 
     // stampa risultato
     std::string msg = "Best computation time: " + std::to_string(best_ms) + " ms";
-    std::string avg = "Average computation time: " + std::to_string(sum_ms/iters) + " ms";
+    std::string avg = "Average computation time: " + std::to_string(sum_ms / iters) + " ms";
 
     utils::PrintUtils::printColored(msg, utils::PrintUtils::TerminalColor::GREEN);
     utils::PrintUtils::printColored(avg, utils::PrintUtils::TerminalColor::GREEN);
-
 }
-

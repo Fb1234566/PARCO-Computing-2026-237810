@@ -29,7 +29,7 @@ public:
     virtual vector<float> computeMultiplication() const = 0;
     virtual void runMultiplications() = 0;
     static vector<float> generateRandomDenseVector(size_t n);
-    bool checkCorrectness(const vector<float>& v);
+    bool checkCorrectness() const;
 };
 
 

@@ -5,6 +5,8 @@
 #include "SpVMInterface.h"
 
 #include <utility>
+#include <cmath>
+#include <algorithm>
 SpVMInterface::SpVMInterface(string  n, utils::CSRMatrix m, const vector<float> &v): modelName(std::move(n)), matrix(std::move(m)), denseVector(v){
 }
 
@@ -30,6 +32,30 @@ vector<float> SpVMInterface::generateRandomDenseVector(size_t n) {
 SpVMInterface::SpVMInterface(const string& n): modelName(n){
 }
 
-bool SpVMInterface::checkCorrectness(const vector<float> &v) {
-    return true; // placeholder
+bool SpVMInterface::checkCorrectness() const {
+    if (static_cast<size_t>(matrix.rows) != result.size()) {
+        return false;
+    }
+
+    std::vector<float> referenceResult(matrix.rows, 0.0f);
+
+    for (int i = 0; i < matrix.rows; ++i) {
+        float sum = 0.0f;
+        for (int j = matrix.rowPointer[i]; j < matrix.rowPointer[i + 1]; ++j) {
+            if (static_cast<size_t>(matrix.colIndex[j]) >= denseVector.size()) {
+                return false;
+            }
+            sum += matrix.val[j] * denseVector[matrix.colIndex[j]];
+        }
+        referenceResult[i] = sum;
+    }
+
+    const float epsilon = 1e-5f;
+    for (int i = 0; i < matrix.rows; ++i) {
+        if (std::abs(referenceResult[i] - result[i]) > epsilon) {
+            return false;
+        }
+    }
+
+    return true;
 }

@@ -6,11 +6,10 @@
 #include <iomanip>
 #include <chrono>
 
-SpMVSerial::SpMVSerial(const string& n, const utils::CSRMatrix &m, const vector<float> &v): SpVMInterface(n, m, v) {
+SpMVSerial::SpMVSerial(const string &n, const utils::CSRMatrix &m, const vector<float> &v) : SpVMInterface(n, m, v) {
 }
 
 vector<float> SpMVSerial::computeMultiplication() const {
-
     const vector<float> &values = matrix.val;
     const vector<int> &rowPointer = matrix.rowPointer;
     const vector<int> &colIndex = matrix.colIndex;
@@ -26,10 +25,10 @@ vector<float> SpMVSerial::computeMultiplication() const {
     }
     return result;
 }
+
 void SpMVSerial::runMultiplications() {
     result = computeMultiplication();
-
 }
 
-SpMVSerial::SpMVSerial(const string& n): SpVMInterface(n){
+SpMVSerial::SpMVSerial(const string &n) : SpVMInterface(n) {
 }
