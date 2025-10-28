@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -N PARCO_SpMV
+#PBS -o ./Cjob.o
+#PBS -e ./Cjob.e
+#PBS -q short_cpuQ
+#PBS -l walltime=0:10:00 select=1:ncpus=1:mem=1mb
+
+# Modules for C
+module load gcc91
+gcc() {
+    gcc-9.1.0 "$@"
+}
+gcc --version
+# Select the working directory
+cd "$PBS_O_WORKDIR"   # go to the directory where qsub was run
+
+echo "Running in: $(pwd)"
+
+# The code should be compiled before submitting the job
+make run
