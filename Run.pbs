@@ -1,9 +1,9 @@
 #!/bin/bash
 #PBS -N PARCO_SpMV
-#PBS -o ./Cjob.o
-#PBS -e ./Cjob.e
+#PBS -o ./PARCO_SpMV_Serial.o
+#PBS -e ./PARCO_SpMV_Serial.e
 #PBS -q short_cpuQ
-#PBS -l walltime=0:10:00 
+#PBS -l walltime=0:40:00
 #PBS -l select=1:ncpus=1:mem=1mb
 
 # Modules for C
