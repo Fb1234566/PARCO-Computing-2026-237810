@@ -2,3 +2,4 @@ https://suitesparse-collection-website.herokuapp.com/MM/INPRO/msdoor.tar.gz
 https://suitesparse-collection-website.herokuapp.com/MM/DIMACS10/venturiLevel3.tar.gz
 https://suitesparse-collection-website.herokuapp.com/MM/DIMACS10/kron_g500-logn19.tar.gz
 https://suitesparse-collection-website.herokuapp.com/MM/MAWI/mawi_201512012345.tar.gz
+https://suitesparse-collection-website.herokuapp.com/MM/VLSI/vas_stokes_2M.tar.gz
