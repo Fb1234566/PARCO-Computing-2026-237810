@@ -14,8 +14,8 @@ class SpMVSerial: public SpVMInterface {
 public:
         SpMVSerial() = default;
         SpMVSerial(const string& n);
-        explicit SpMVSerial(const string& n, const utils::CSRMatrix &m, const vector<float> &v);
-        vector<float> computeMultiplication() const override;
+        explicit SpMVSerial(const string& n, const utils::CSRMatrix &m, const vector<double> &v);
+        vector<double> computeMultiplication() const override;
         void runMultiplications() override;
 };
 

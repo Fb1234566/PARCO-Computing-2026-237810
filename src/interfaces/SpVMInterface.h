@@ -20,15 +20,15 @@ public:
     virtual ~SpVMInterface() = default;
     utils::CSRMatrix matrix;
     SpVMInterface() = default;
-    vector<float> denseVector;
-    vector<float> result;
+    vector<double> denseVector;
+    vector<double> result;
     SpVMInterface(const string& n);
-    explicit SpVMInterface( string  n, utils::CSRMatrix m, const vector<float> &v);
+    explicit SpVMInterface( string  n, utils::CSRMatrix m, const vector<double> &v);
     void setMatrix(utils::CSRMatrix m);
-    void setDenseVector(const vector<float> &v);
-    virtual vector<float> computeMultiplication() const = 0;
+    void setDenseVector(const vector<double> &v);
+    virtual vector<double> computeMultiplication() const = 0;
     virtual void runMultiplications() = 0;
-    static vector<float> generateRandomDenseVector(size_t n);
+    static vector<double> generateRandomDenseVector(size_t n);
     bool checkCorrectness() const;
 };
 

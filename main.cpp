@@ -54,7 +54,7 @@ int main() {
         std::cout << "File: " << fullPath << '\n';
         serial.modelName = "serial SpMV";
         serial.setMatrix(reader(fullPath.c_str()));
-        std::vector<float> denseVector(6, 1.0f);
+        std::vector<double> denseVector(6, 1.0f);
         serial.setDenseVector(denseVector);
         utils::ExecutionStatistics stats(serial);
         stats.run();

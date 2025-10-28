@@ -16,14 +16,14 @@ namespace utils {
     struct COOEntry {
         int row;
         int col;
-        float val;
+        double val;
         bool operator<(const COOEntry& e) const;
     };
 
     struct CSRMatrix {
         vector<int> rowPointer;
         vector<int> colIndex;
-        vector<float> val;
+        vector<double> val;
         int rows;
         int cols;
     };

@@ -39,7 +39,7 @@ namespace utils {
         string prev_line = "%";
         int rows = 0, cols = 0;
         int row, col;
-        float val;
+        double val;
         int numLines = countLines(filename), lineCounter = 0;
 
         auto t_start = chrono::high_resolution_clock::now();
@@ -91,11 +91,13 @@ namespace utils {
         PrintUtils::printColored("Starting COO to CSR conversion...", PrintUtils::TerminalColor::CYAN);
 
         CSRMatrix csr;
+        csr.rows = 0;
+        csr.cols = 0;
         if (s.empty()) return csr;
         const int maxRow = getMatrixDimensions(filename)[0];
         const int maxCols = getMatrixDimensions(filename)[1];
 
-        csr.val = vector<float>();
+        csr.val = vector<double>();
         csr.colIndex = vector<int>();
         csr.rowPointer = vector<int>(maxRow + 1, 0);
         csr.rows = maxRow;
