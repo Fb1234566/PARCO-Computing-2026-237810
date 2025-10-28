@@ -7,6 +7,9 @@
 #include <utility>
 #include <cmath>
 #include <algorithm>
+
+#include "src/utils/PrintUtils.h"
+
 SpVMInterface::SpVMInterface(string  n, utils::CSRMatrix m, const vector<double> &v): modelName(std::move(n)), matrix(std::move(m)), denseVector(v){
 }
 
@@ -33,6 +36,7 @@ SpVMInterface::SpVMInterface(const string& n): modelName(n){
 }
 
 bool SpVMInterface::checkCorrectness() const {
+    utils::PrintUtils::logToFile("Started checking result correctness");
     if (static_cast<size_t>(matrix.rows) != result.size()) {
         return false;
     }

@@ -9,6 +9,7 @@
 #include "src/utils/MatrixReader.h"
 #include "src/serial/SpMVSerial.h"
 #include "src/utils/ExecutionStatistics.h"
+#include "src/utils/PrintUtils.h"
 
 static void traverse_directory(const std::string& dir, std::vector<std::string>& files) {
     DIR* dp = opendir(dir.c_str());
@@ -38,6 +39,7 @@ static void traverse_directory(const std::string& dir, std::vector<std::string>&
 int main() {
     const std::string dataset_dir = "datasets";
     SpMVSerial serial;
+    utils::PrintUtils::logToFile("Program started");
 
     struct stat st;
     if (stat(dataset_dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
@@ -52,13 +54,15 @@ int main() {
     for (const auto& fullPath : files) {
         std::cout << "============================\n";
         std::cout << "File: " << fullPath << '\n';
+        utils::PrintUtils::logToFile("Started working on matrix " + fullPath);
         serial.modelName = "serial SpMV";
-        serial.setMatrix(reader(fullPath.c_str()));
+        serial.setMatrix(reader(fullPath));
         std::vector<double> denseVector(6, 1.0f);
         serial.setDenseVector(denseVector);
         utils::ExecutionStatistics stats(serial);
         stats.run();
         serial.runMultiplications();
+        utils::PrintUtils::logToFile("Done working on matrix "+ fullPath);
     }
 
     return 0;

@@ -26,10 +26,12 @@ namespace utils {
     }
 
     set<COOEntry> MatrixReader::readMatrixCOO(const string &filename) {
+        utils::PrintUtils::logToFile("Started importing matrix as COO");
         ifstream MatrixFile(filename);
 
         if (!MatrixFile.is_open()) {
-            PrintUtils::printColored("Errore: impossibile aprire il file " + filename, PrintUtils::TerminalColor::RED);
+            utils::PrintUtils::logToFile("Error: cannot open file " + filename);
+            PrintUtils::printColored("Error: cannot open file " + filename, PrintUtils::TerminalColor::RED);
             return {};
         }
 
@@ -73,6 +75,7 @@ namespace utils {
         auto t_end = chrono::high_resolution_clock::now();
         auto ms = chrono::duration_cast<chrono::milliseconds>(t_end - t_start).count();
         PrintUtils::printColored("Parsing completed in " + to_string(ms) + " ms", PrintUtils::TerminalColor::GREEN);
+        utils::PrintUtils::logToFile("COO parsing completed in " + to_string(ms) + " ms");
         MatrixFile.close();
         return COOMatrix;
     }
@@ -89,6 +92,7 @@ namespace utils {
 
     CSRMatrix MatrixReader::CooMatrixToCSR(const set<COOEntry> &s, const string &filename) {
         PrintUtils::printColored("Starting COO to CSR conversion...", PrintUtils::TerminalColor::CYAN);
+        PrintUtils::logToFile("Started COO to CSR conversion");
 
         CSRMatrix csr;
         csr.rows = 0;
@@ -129,6 +133,7 @@ namespace utils {
             }
         }
         PrintUtils::printColored("COO to CSR conversion completed.", PrintUtils::TerminalColor::GREEN);
+        PrintUtils::logToFile("COO to CSR conversion completed successfully");
         return csr;
     }
 

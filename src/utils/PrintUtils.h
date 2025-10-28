@@ -34,7 +34,7 @@ namespace utils {
         static void printColored(const string& strToPrint, const TerminalColor& color);
         static void printProgress(int current, int maxElements);
         static void printProgressNewLine(int current, int maxElements, std::ostream& out = std::cout);
-
+        static void logToFile(const std::string& message, const std::string& filepath = "app.log", bool append = true);
     };
 } // Utils
 
