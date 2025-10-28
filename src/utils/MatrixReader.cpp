@@ -62,7 +62,8 @@ namespace utils {
                             COOEntry entry{.row = row, .col = col, .val = val};
                             COOMatrix.insert(entry);
                         }
-                        utils::PrintUtils::printProgress(lineCounter, numLines);
+                        //utils::PrintUtils::printProgress(lineCounter, numLines);
+                        utils::PrintUtils::printProgressNewLine(lineCounter, numLines);
                     }
                 }
                 prev_line = curr_line;

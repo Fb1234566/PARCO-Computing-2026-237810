@@ -53,4 +53,37 @@ namespace utils {
     }
 
 
+    void PrintUtils::printProgressNewLine(const int current, const int maxElements, std::ostream& out) {
+        if (maxElements <= 0) {
+            out << "Progress: " << current << "/" << maxElements << "\n";
+            out.flush();
+            return;
+        }
+
+        const int barWidth = 50;
+        const float progress = static_cast<float>(current) / maxElements;
+        int percent = static_cast<int>(progress * 100.0f);
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+
+        static int lastPrintedPercent = -1;
+
+       if ((percent % 10 != 0 && current != maxElements) || percent == lastPrintedPercent) {
+            return;
+        }
+
+        lastPrintedPercent = percent;
+
+        const int pos = static_cast<int>(barWidth * (static_cast<float>(percent) / 100.0f));
+
+        out << getAnsiCode(TerminalColor::CYAN) << "[";
+        for (int i = 0; i < barWidth; ++i) {
+            if (i < pos) out << "=";
+            else if (i == pos) out << ">";
+            else out << " ";
+        }
+        out << "] " << percent << "% (" << current << "/" << maxElements << ")"
+            << getAnsiCode(TerminalColor::DEFAULT) << std::endl;
+    }
+
 } // Utils

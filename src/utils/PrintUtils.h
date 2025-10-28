@@ -4,6 +4,7 @@
 
 #ifndef DELIVERABLE1_2025_2026_PRINTUTILS_H
 #define DELIVERABLE1_2025_2026_PRINTUTILS_H
+#include <iostream>
 #include <string>
 using namespace std;
 namespace utils {
@@ -32,6 +33,8 @@ namespace utils {
         static const char* getAnsiCode(TerminalColor color);
         static void printColored(const string& strToPrint, const TerminalColor& color);
         static void printProgress(int current, int maxElements);
+        static void printProgressNewLine(int current, int maxElements, std::ostream& out = std::cout);
+
     };
 } // Utils
 
