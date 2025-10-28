@@ -112,6 +112,11 @@ namespace utils {
 #else
         localtime_r(&t, &tm);
 #endif
-        ofs << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << " - " << message << std::endl;
-    }
+        char buf[64];
+        if (std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm)) {
+            ofs << buf << " - " << message << std::endl;
+        } else {
+            // fallback minimale: stampare il timestamp in secondi
+            ofs << t << " - " << message << std::endl;
+        }    }
 } // Utils
