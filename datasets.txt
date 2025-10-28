@@ -1,5 +1,2 @@
-https://suitesparse-collection-website.herokuapp.com/MM/DIMACS10/packing-500x100x100-b050.tar.gz
-https://suitesparse-collection-website.herokuapp.com/MM/Gleich/wikipedia-20060925.tar.gz
-https://suitesparse-collection-website.herokuapp.com/MM/Fluorem/RM07R.tar.gz
-https://suitesparse-collection-website.herokuapp.com/MM/DIMACS10/road_usa.tar.gz
-https://suitesparse-collection-website.herokuapp.com/MM/DIMACS10/road_usa.tar.gz
+https://suitesparse-collection-website.herokuapp.com/MM/INPRO/msdoor.tar.gz
+https://suitesparse-collection-website.herokuapp.com/MM/DIMACS10/venturiLevel3.tar.gz
