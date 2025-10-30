@@ -10,6 +10,7 @@
 #include "src/serial/SpMVSerial.h"
 #include "src/utils/ExecutionStatistics.h"
 #include "src/utils/PrintUtils.h"
+#include "src/openMP/SpMVOpenMP.h"
 
 static void traverse_directory(const std::string& dir, std::vector<std::string>& files) {
     DIR* dp = opendir(dir.c_str());
@@ -38,7 +39,8 @@ static void traverse_directory(const std::string& dir, std::vector<std::string>&
 
 int main() {
     const std::string dataset_dir = "datasets";
-    SpMVSerial serial;
+    SpMVSerial serial("serial SpMV");
+    SpMVOpenMP openMP("openMP SpMV");
     utils::PrintUtils::logToFile("Program started");
 
     struct stat st;
@@ -55,13 +57,14 @@ int main() {
         std::cout << "============================\n";
         std::cout << "File: " << fullPath << '\n';
         utils::PrintUtils::logToFile("Started working on matrix " + fullPath);
-        serial.modelName = "serial SpMV";
-        serial.setMatrix(reader(fullPath));
-        std::vector<double> denseVector(6, 1.0f);
-        serial.setDenseVector(denseVector);
-        utils::ExecutionStatistics stats(serial);
-        stats.run();
+        utils::CSRMatrix matrix = reader(fullPath);
+        serial.setMatrix(matrix);
+        utils::ExecutionStatistics statsSerial(serial);
+        statsSerial.run();
         serial.runMultiplications();
+        openMP.setMatrix(matrix);
+        utils::ExecutionStatistics statsOpenMp(openMP);
+        statsOpenMp.run();
         utils::PrintUtils::logToFile("Done working on matrix "+ fullPath);
     }
 
