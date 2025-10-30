@@ -20,7 +20,7 @@ vector<double> SpMVOpenMP::computeMultiplication() const {
     const vector<int> &rowPointer = matrix.rowPointer;
     const vector<int> &colIndex = matrix.colIndex;
     vector<double> result(rowPointer.size() - 1, 0.0f);
-#pragma omp parallel for num_threads(5)
+#pragma omp parallel for
     for (int row = 0; row < rowPointer.size() - 1; ++row) {
         double partial_sum = 0.0f;
         for (int idx = rowPointer[row]; idx < rowPointer[row + 1]; ++idx) {

@@ -35,23 +35,25 @@ vector<double> SpVMInterface::generateRandomDenseVector(size_t n) {
 SpVMInterface::SpVMInterface(const string& n): modelName(n){
 }
 
-bool SpVMInterface::checkCorrectness() const {
+bool SpVMInterface::checkCorrectness() {
     utils::PrintUtils::logToFile("Started checking result correctness");
     if (static_cast<size_t>(matrix.rows) != result.size()) {
         return false;
     }
 
-    std::vector<double> referenceResult(matrix.rows, 0.0f);
+    if (referenceResult.empty()) {
+        referenceResult = vector<double>(matrix.rows, 0.0f);
 
-    for (int i = 0; i < matrix.rows; ++i) {
-        double sum = 0.0f;
-        for (int j = matrix.rowPointer[i]; j < matrix.rowPointer[i + 1]; ++j) {
-            if (static_cast<size_t>(matrix.colIndex[j]) >= denseVector.size()) {
-                return false;
+        for (int i = 0; i < matrix.rows; ++i) {
+            double sum = 0.0f;
+            for (int j = matrix.rowPointer[i]; j < matrix.rowPointer[i + 1]; ++j) {
+                if (static_cast<size_t>(matrix.colIndex[j]) >= denseVector.size()) {
+                    return false;
+                }
+                sum += matrix.val[j] * denseVector[matrix.colIndex[j]];
             }
-            sum += matrix.val[j] * denseVector[matrix.colIndex[j]];
+            referenceResult[i] = sum;
         }
-        referenceResult[i] = sum;
     }
 
     const double epsilon = 1e-5f;

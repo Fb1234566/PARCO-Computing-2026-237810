@@ -22,6 +22,7 @@ public:
     SpVMInterface() = default;
     vector<double> denseVector;
     vector<double> result;
+    vector<double> referenceResult;
     SpVMInterface(const string& n);
     explicit SpVMInterface( string  n, utils::CSRMatrix m, const vector<double> &v);
     void setMatrix(utils::CSRMatrix m);
@@ -29,7 +30,7 @@ public:
     virtual vector<double> computeMultiplication() const = 0;
     virtual void runMultiplications() = 0;
     static vector<double> generateRandomDenseVector(size_t n);
-    bool checkCorrectness() const;
+    bool checkCorrectness();
 };
 
 
