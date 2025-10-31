@@ -2,7 +2,7 @@
 CXX := g++
 
 # Flag di base
-BASE_CXXFLAGS := -std=c++11 -Wall -Wextra -Wpedantic -O0 -g -I.
+BASE_CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -O0 -g -I.
 
 # Flag specifici per cartella (personalizzabili)
 CXXFLAGS_MAIN    := $(BASE_CXXFLAGS)
