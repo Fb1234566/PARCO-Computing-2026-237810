@@ -57,5 +57,7 @@ void utils::ExecutionStatistics::run() const {
     utils::PrintUtils::printColored(avg, utils::PrintUtils::TerminalColor::GREEN);
     std::string safeName = model.modelName;
     std::replace(safeName.begin(), safeName.end(), ' ', '_');
-    d.ExportToCSV("results/"+ std::string("stats_") + safeName + "_" + matrix + ".csv");
+    std::string safeMatrix = matrix;
+    std::replace(safeMatrix.begin(), safeMatrix.end(), '/', '_');
+    d.ExportToCSV("results/"+ std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
 }
