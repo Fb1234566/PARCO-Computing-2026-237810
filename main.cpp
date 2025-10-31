@@ -11,6 +11,7 @@
 #include "src/utils/ExecutionStatistics.h"
 #include "src/utils/PrintUtils.h"
 #include "src/openMP/SpMVOpenMP.h"
+#include "src/utils/DataTable.h"
 
 static void traverse_directory(const std::string& dir, std::vector<std::string>& files) {
     DIR* dp = opendir(dir.c_str());
