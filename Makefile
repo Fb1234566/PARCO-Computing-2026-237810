@@ -1,5 +1,5 @@
 # Compilatore
-CXX := g++
+CXX := gcc
 
 # Flag di base
 BASE_CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -O0 -g -I.
