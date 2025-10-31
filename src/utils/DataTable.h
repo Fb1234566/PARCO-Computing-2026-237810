@@ -24,7 +24,7 @@ namespace utils {
         vector<vector<Cell>> values;
         static bool checkDataType(const Cell &data, DATATYPES expectedDt);
     public:
-        void AddColumn(const string &n, DATATYPES dt, vector<Cell> data);
+        void AddColumn(const string &n, DATATYPES dt = Int, vector<Cell> data = vector<Cell>());
         void AddValue(const string &colName, const Cell &data);
         void AddValues(string colName, vector<Cell> data);
         void AddRow(const vector<Cell> &data);

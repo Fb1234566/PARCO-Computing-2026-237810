@@ -27,20 +27,16 @@ namespace utils {
     }
 
     void DataTable::AddValue(const string &colName, const Cell &data) {
-        bool colFound = false;
-        int idx = -1;
-        while (colFound == false and idx < header.size()) {
-            idx++;
-            colFound = header[idx] == colName;
+        const auto it = std::find(header.begin(), header.end(), colName);
+        if (it == header.end()) {
+            throw std::invalid_argument("Column " + colName + " not present");
         }
-
-        if (!colFound) {
-            throw invalid_argument("Column " + colName + "not present");
-        }
+        const size_t idx = std::distance(header.begin(), it);
 
         if (!checkDataType(data, columntype[idx])) {
-            throw invalid_argument("Data type is not compatible with column datatype");
+            throw std::invalid_argument("Data type is not compatible with column datatype");
         }
+
         if (idx >= values.size()) values.resize(header.size());
         values[idx].push_back(data);
     }
