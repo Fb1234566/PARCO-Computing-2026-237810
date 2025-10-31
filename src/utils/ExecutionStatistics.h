@@ -11,8 +11,9 @@ namespace utils {
     class ExecutionStatistics {
     private:
         SpVMInterface& model;
+        string matrix;
     public:
-        ExecutionStatistics(SpVMInterface&  i);
+        ExecutionStatistics(SpVMInterface&  i, string matrix);
         void run() const;
 
     };

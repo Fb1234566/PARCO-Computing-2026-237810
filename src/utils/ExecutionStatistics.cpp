@@ -8,10 +8,11 @@
 #include <chrono>
 #include <string>
 #include <algorithm>
+#include <utility>
 #include "PrintUtils.h"
 #include "DataTable.h"
 
-utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i) : model(i) {
+utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i, string matrix) : model(i), matrix(std::move(matrix)) {
 }
 
 void utils::ExecutionStatistics::run() const {
@@ -56,5 +57,5 @@ void utils::ExecutionStatistics::run() const {
     utils::PrintUtils::printColored(avg, utils::PrintUtils::TerminalColor::GREEN);
     std::string safeName = model.modelName;
     std::replace(safeName.begin(), safeName.end(), ' ', '_');
-    d.ExportToCSV("results/"+ std::string("stats_") + safeName + ".csv");
+    d.ExportToCSV("results/"+ std::string("stats_") + safeName + "_" + matrix + ".csv");
 }

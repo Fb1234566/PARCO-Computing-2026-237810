@@ -60,11 +60,11 @@ int main() {
         utils::PrintUtils::logToFile("Started working on matrix " + fullPath);
         utils::CSRMatrix matrix = reader(fullPath);
         serial.setMatrix(matrix);
-        utils::ExecutionStatistics statsSerial(serial);
+        utils::ExecutionStatistics statsSerial(serial, fullPath);
         statsSerial.run();
         serial.runMultiplications();
         openMP.setMatrix(matrix);
-        utils::ExecutionStatistics statsOpenMp(openMP);
+        utils::ExecutionStatistics statsOpenMp(openMP, fullPath);
         statsOpenMp.run();
         utils::PrintUtils::logToFile("Done working on matrix "+ fullPath);
     }
