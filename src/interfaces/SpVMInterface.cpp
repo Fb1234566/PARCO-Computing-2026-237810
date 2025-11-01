@@ -44,7 +44,7 @@ bool SpVMInterface::checkCorrectness() {
     if (referenceResult.empty()) {
         referenceResult = vector<double>(matrix.rows, 0.0f);
 
-        for (int i = 0; i < matrix.rows; ++i) {
+        for (int i = 0; i < matrix.rowPointer.size() - 1; ++i) {
             double sum = 0.0f;
             for (int j = matrix.rowPointer[i]; j < matrix.rowPointer[i + 1]; ++j) {
                 if (static_cast<size_t>(matrix.colIndex[j]) >= denseVector.size()) {
