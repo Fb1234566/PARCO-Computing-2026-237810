@@ -9,6 +9,7 @@
 #include <string>
 #include <algorithm>
 #include <utility>
+#include <stdexcept>
 #include "PrintUtils.h"
 #include "DataTable.h"
 
@@ -16,10 +17,16 @@ utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i, string matrix)
 }
 
 void utils::ExecutionStatistics::run() const {
-    utils::PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
+    PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
 
     model.setDenseVector(SpVMInterface::generateRandomDenseVector(model.matrix.rowPointer.size()));
-    utils::PrintUtils::logToFile("Set dense vector");
+    PrintUtils::logToFile("Set dense vector");
+    if (!model.computeReferenceResult()) {
+        const string errorMsg = "Correctness check failed: could not compute reference result.";
+        utils::PrintUtils::logToFile(errorMsg);
+        utils::PrintUtils::printColored(errorMsg, utils::PrintUtils::TerminalColor::RED);
+        throw out_of_range(errorMsg);
+    }
 
     // warm-up
     model.runMultiplications();

@@ -31,6 +31,7 @@ public:
     virtual void runMultiplications() = 0;
     static vector<double> generateRandomDenseVector(size_t n);
     bool checkCorrectness();
+    bool computeReferenceResult();
 };
 
 

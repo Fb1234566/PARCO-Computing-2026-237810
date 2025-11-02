@@ -35,33 +35,55 @@ vector<double> SpVMInterface::generateRandomDenseVector(size_t n) {
 SpVMInterface::SpVMInterface(const string& n): modelName(n){
 }
 
+bool SpVMInterface::computeReferenceResult() {
+    if (!referenceResult.empty()) {
+        return true;
+    }
+
+    utils::PrintUtils::logToFile("Starting reference result computation.");
+    referenceResult = vector<double>(matrix.rows, 0.0);
+
+    for (size_t i = 0; i < matrix.rowPointer.size() - 1; ++i) {
+        double sum = 0.0;
+        for (int j = matrix.rowPointer[i]; j < matrix.rowPointer[i + 1]; ++j) {
+            if (static_cast<size_t>(matrix.colIndex[j]) >= denseVector.size()) {
+                string errorMsg = "Error in reference computation: column index " + to_string(matrix.colIndex[j]) +
+                                  " is out of bounds for dense vector of size " + to_string(denseVector.size()) + ".";
+                utils::PrintUtils::logToFile(errorMsg);
+                return false;
+            }
+            sum += matrix.val[j] * denseVector[matrix.colIndex[j]];
+        }
+        referenceResult[i] = sum;
+    }
+
+    utils::PrintUtils::logToFile("Reference result computation completed successfully.");
+    return true;
+}
+
 bool SpVMInterface::checkCorrectness() {
-    utils::PrintUtils::logToFile("Started checking result correctness");
+    utils::PrintUtils::logToFile("Starting result correctness check.");
     if (static_cast<size_t>(matrix.rows) != result.size()) {
+        string errorMsg = "Correctness check failed: result size (" + to_string(result.size()) +
+                          ") does not match matrix rows (" + to_string(matrix.rows) + ").";
+        utils::PrintUtils::logToFile(errorMsg);
+        utils::PrintUtils::printColored(errorMsg, utils::PrintUtils::TerminalColor::RED);
         return false;
     }
 
-    if (referenceResult.empty()) {
-        referenceResult = vector<double>(matrix.rows, 0.0f);
-
-        for (int i = 0; i < matrix.rowPointer.size() - 1; ++i) {
-            double sum = 0.0f;
-            for (int j = matrix.rowPointer[i]; j < matrix.rowPointer[i + 1]; ++j) {
-                if (static_cast<size_t>(matrix.colIndex[j]) >= denseVector.size()) {
-                    return false;
-                }
-                sum += matrix.val[j] * denseVector[matrix.colIndex[j]];
-            }
-            referenceResult[i] = sum;
-        }
-    }
-
-    const double epsilon = 1e-5f;
+    const double epsilon = 1e-5;
     for (int i = 0; i < matrix.rows; ++i) {
         if (std::abs(referenceResult[i] - result[i]) > epsilon) {
+            string errorMsg = "Correctness check failed: mismatch found at index " + to_string(i) +
+                              ". Expected: " + to_string(referenceResult[i]) + ", Got: " + to_string(result[i]);
+            utils::PrintUtils::logToFile(errorMsg);
+            utils::PrintUtils::printColored(errorMsg, utils::PrintUtils::TerminalColor::RED);
             return false;
         }
     }
 
+    string successMsg = "Correctness check passed successfully.";
+    utils::PrintUtils::logToFile(successMsg);
+    utils::PrintUtils::printColored(successMsg, utils::PrintUtils::TerminalColor::GREEN);
     return true;
 }
