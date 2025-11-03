@@ -28,7 +28,9 @@ public:
     void setMatrix(utils::CSRMatrix m);
     void setDenseVector(const vector<double> &v);
     virtual vector<double> computeMultiplication() const = 0;
+    virtual vector<double> computeMultiplication(int numThreads) const = 0;
     virtual void runMultiplications() = 0;
+    virtual void runMultiplications(int numThreads) = 0;
     static vector<double> generateRandomDenseVector(size_t n);
     bool checkCorrectness() const;
     bool computeReferenceResult();

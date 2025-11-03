@@ -12,7 +12,9 @@ public:
     SpMVOpenMP() = default;
     SpMVOpenMP(const string& n);
     explicit SpMVOpenMP(const string& n, const utils::CSRMatrix &m, const vector<double> &v);
+    vector<double> computeMultiplication(int numThreads) const override;
     vector<double> computeMultiplication() const override;
+    void runMultiplications(int numThreads) override;
     void runMultiplications() override;
     ~SpMVOpenMP() override;
 };

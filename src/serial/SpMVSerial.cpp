@@ -30,5 +30,13 @@ void SpMVSerial::runMultiplications() {
     result = computeMultiplication();
 }
 
+vector<double> SpMVSerial::computeMultiplication(int numThreads) const {
+    throw logic_error("The model is running serial, not OpenMP");
+}
+
+void SpMVSerial::runMultiplications(int numThreads) {
+    throw logic_error("The model is running serial, not OpenMP");
+}
+
 SpMVSerial::SpMVSerial(const string &n) : SpVMInterface(n) {
 }

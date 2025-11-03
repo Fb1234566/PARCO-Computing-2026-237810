@@ -16,7 +16,9 @@ public:
         SpMVSerial(const string& n);
         explicit SpMVSerial(const string& n, const utils::CSRMatrix &m, const vector<double> &v);
         vector<double> computeMultiplication() const override;
+        vector<double> computeMultiplication(int numThreads) const override;
         void runMultiplications() override;
+        void runMultiplications(int numThreads) override;
 };
 
 
