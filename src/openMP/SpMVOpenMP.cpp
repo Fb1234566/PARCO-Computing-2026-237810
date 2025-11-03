@@ -4,6 +4,8 @@
 
 #include "SpMVOpenMP.h"
 
+#include <iostream>
+#include <omp.h>
 #include <stdexcept>
 
 SpMVOpenMP::SpMVOpenMP(const string &n):SpVMInterface(n) {
@@ -22,7 +24,7 @@ vector<double> SpMVOpenMP::computeMultiplication(int numThreads) const {
     const vector<int> &rowPointer = matrix.rowPointer;
     const vector<int> &colIndex = matrix.colIndex;
     vector<double> result(rowPointer.size() - 1, 0.0f);
-#pragma omp set_num_threads(numThreads) parallel for
+#pragma omp parallel for num_threads(numThreads)
     for (int row = 0; row < rowPointer.size() - 1; ++row) {
         double partial_sum = 0.0f;
         for (int idx = rowPointer[row]; idx < rowPointer[row + 1]; ++idx) {
