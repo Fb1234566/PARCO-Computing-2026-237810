@@ -19,7 +19,7 @@ utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i, string matrix)
 void utils::ExecutionStatistics::run() const {
     PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
 
-    model.setDenseVector(SpVMInterface::generateRandomDenseVector(model.matrix.rowPointer.size()));
+    model.setDenseVector(SpVMInterface::generateRandomDenseVector(model.matrix.cols));
     PrintUtils::logToFile("Set dense vector");
     if (!model.computeReferenceResult()) {
         const string errorMsg = "Correctness check failed: could not compute reference result.";

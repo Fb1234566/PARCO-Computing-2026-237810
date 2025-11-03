@@ -62,7 +62,6 @@ int main() {
         serial.setMatrix(matrix);
         utils::ExecutionStatistics statsSerial(serial, fullPath);
         statsSerial.run();
-        serial.runMultiplications();
         openMP.setMatrix(matrix);
         utils::ExecutionStatistics statsOpenMp(openMP, fullPath);
         statsOpenMp.run();

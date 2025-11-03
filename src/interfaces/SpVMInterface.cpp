@@ -36,9 +36,6 @@ SpVMInterface::SpVMInterface(const string& n): modelName(n){
 }
 
 bool SpVMInterface::computeReferenceResult() {
-    if (!referenceResult.empty()) {
-        return true;
-    }
 
     utils::PrintUtils::logToFile("Starting reference result computation.");
     referenceResult = vector<double>(matrix.rows, 0.0);
@@ -61,7 +58,7 @@ bool SpVMInterface::computeReferenceResult() {
     return true;
 }
 
-bool SpVMInterface::checkCorrectness() {
+bool SpVMInterface::checkCorrectness() const {
     utils::PrintUtils::logToFile("Starting result correctness check.");
     if (static_cast<size_t>(matrix.rows) != result.size()) {
         string errorMsg = "Correctness check failed: result size (" + to_string(result.size()) +
