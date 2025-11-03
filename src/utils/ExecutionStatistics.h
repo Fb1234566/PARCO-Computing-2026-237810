@@ -14,7 +14,8 @@ namespace utils {
         string matrix;
     public:
         ExecutionStatistics(SpVMInterface&  i, string matrix);
-        void run() const;
+        void runSerial() const;
+        void runOpenMP() const;
 
     };
 }
