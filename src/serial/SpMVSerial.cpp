@@ -40,3 +40,6 @@ void SpMVSerial::runMultiplications(int numThreads) {
 
 SpMVSerial::SpMVSerial(const string &n) : SpVMInterface(n) {
 }
+
+void SpMVSerial::runPreprocessing(void* arg) {
+}

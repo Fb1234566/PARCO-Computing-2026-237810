@@ -49,6 +49,9 @@ void SpMVOpenMP::runMultiplications(int numThreads) {
     result = computeMultiplication(numThreads);
 }
 
+void SpMVOpenMP::runPreprocessing(void* arg) {
+}
+
 
 
 

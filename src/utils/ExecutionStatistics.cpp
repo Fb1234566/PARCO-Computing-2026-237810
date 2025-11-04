@@ -19,7 +19,8 @@ utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i, string matrix)
 
 void utils::ExecutionStatistics::runOpenMP() const {
     PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
-
+    const auto n = new int(1);
+    model.runPreprocessing(n);
     model.setDenseVector(SpVMInterface::generateRandomDenseVector(model.matrix.cols));
     PrintUtils::logToFile("Set dense vector");
     if (!model.computeReferenceResult()) {
@@ -45,6 +46,8 @@ void utils::ExecutionStatistics::runOpenMP() const {
         PrintUtils::printColored(thread_msg, PrintUtils::TerminalColor::YELLOW);
         double best_ms = 1e9;
         double sum_ms = 0;
+        const auto nThreads = new int(tn);
+        model.runPreprocessing(nThreads);
         for (int t = 0; t < iters; ++t) {
             auto t0 = std::chrono::steady_clock::now();
             model.runMultiplications(tn);

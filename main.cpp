@@ -11,7 +11,7 @@
 #include "src/utils/ExecutionStatistics.h"
 #include "src/utils/PrintUtils.h"
 #include "src/openMP/SpMVOpenMP.h"
-#include "src/utils/DataTable.h"
+#include "src/openMP/SpMVOpenMPBinning.h"
 
 static void traverse_directory(const std::string& dir, std::vector<std::string>& files) {
     DIR* dp = opendir(dir.c_str());
@@ -42,6 +42,7 @@ int main() {
     const std::string dataset_dir = "datasets";
     SpMVSerial serial("serial SpMV");
     SpMVOpenMP openMP("openMP SpMV");
+    SpMVOpenMPBinning openMPBinning("OpenMPBinning SpMV");
     utils::PrintUtils::logToFile("Program started");
 
     struct stat st;
@@ -65,6 +66,9 @@ int main() {
         openMP.setMatrix(matrix);
         utils::ExecutionStatistics statsOpenMp(openMP, fullPath);
         statsOpenMp.runOpenMP();
+        openMPBinning.setMatrix(matrix);
+        utils::ExecutionStatistics statsOpenMPBinning(openMPBinning, fullPath);
+        statsOpenMPBinning.runOpenMP();
         utils::PrintUtils::logToFile("Done working on matrix "+ fullPath);
     }
 

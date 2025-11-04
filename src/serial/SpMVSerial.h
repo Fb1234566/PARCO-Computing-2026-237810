@@ -19,6 +19,7 @@ public:
         vector<double> computeMultiplication(int numThreads) const override;
         void runMultiplications() override;
         void runMultiplications(int numThreads) override;
+        void runPreprocessing(void* arg) override;
 };
 
 
