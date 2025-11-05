@@ -42,7 +42,7 @@ vector<double> SpMVOpenMPBinning::computeMultiplication(int numThreads) const {
 
     // parallelizzo sui bin
     int numBins = static_cast<int>(binPointer.size()) - 1;
-#pragma omp parallel for num_threads(numThreads) schedule(static)
+#pragma omp parallel for num_threads(numThreads) schedule(dynamic)
     for (int b = 0; b < numBins; ++b) {
         for (int row = binPointer[b]; row < binPointer[b + 1]; ++row) {
             double partial_sum = 0.0;
