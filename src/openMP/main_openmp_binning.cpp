@@ -1,4 +1,4 @@
-// src/serial/main_serial.cpp
+// src/openMP/main_openmp.cpp
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
@@ -6,14 +6,14 @@
 #include <cstring>
 #include <filesystem>
 
+#include "SpMVOpenMPBinning.h"
 #include "../utils/MatrixReader.h"
-#include "../serial/SpMVSerial.h"
 #include "../utils/ExecutionStatistics.h"
 #include "../utils/PrintUtils.h"
 
 int main(int argc, char **argv) {
-    if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <matrix_path> <iterations> <output_dir>\n";
+    if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " <matrix_path> <iterations> <output_dir> <nthreads>\n";
         return 1;
     }
 
@@ -46,6 +46,20 @@ int main(int argc, char **argv) {
         return 6;
     }
 
+    int nthreads = 1;
+    try {
+        size_t pos = 0;
+        long tmp = std::stol(argv[4], &pos);
+        if (pos != std::strlen(argv[4]) || tmp <= 0) {
+            std::cerr << "Errore: nthreads deve essere un intero positivo\n";
+            return 7;
+        }
+        nthreads = static_cast<int>(tmp);
+    } catch (const std::exception &e) {
+        std::cerr << "Errore durante il parse di nthreads: " << e.what() << '\n';
+        return 7;
+    }
+
     struct stat sb;
     if (stat(fullPath.c_str(), &sb) != 0) {
         std::cerr << "Errore: impossibile accedere a " << fullPath << ": " << std::strerror(errno) << '\n';
@@ -59,22 +73,24 @@ int main(int argc, char **argv) {
     utils::PrintUtils::logToFile("Serial program started");
     utils::PrintUtils::logToFile(std::string("Output directory: ") + outputDirStr);
     try {
-        SpMVSerial serial("serial SpMV");
+        SpMVOpenMPBinning openMP("openMP Binning SpMV");
         utils::MatrixReader reader;
 
         std::cout << "============================\n";
         std::cout << "File: " << fullPath << '\n';
         std::cout << "Iterations: " << iterations << '\n';
         std::cout << "Output dir: " << outputDirStr << '\n';
+        std::cout << "Nthreads: " << nthreads << '\n';
         utils::PrintUtils::logToFile("Started working on matrix " + fullPath);
         utils::PrintUtils::logToFile(std::string("Iterations: ") + std::to_string(iterations));
+        utils::PrintUtils::logToFile(std::string("Nthreads: ") + std::to_string(nthreads));
 
         utils::CSRMatrix matrix = reader(fullPath);
-        serial.setMatrix(matrix);
+        openMP.setMatrix(matrix);
 
-        utils::ExecutionStatistics serialStats(serial, fullPath);
+        utils::ExecutionStatistics serialStats(openMP, fullPath);
 
-        serialStats.runSerial(iterations, outputDirStr);
+        serialStats.runOpenMP(iterations, outputDirStr, nthreads);
 
         utils::PrintUtils::logToFile("Done working on matrix " + fullPath);
     } catch (const std::exception &e) {

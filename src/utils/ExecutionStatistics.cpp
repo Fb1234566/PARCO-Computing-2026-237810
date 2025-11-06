@@ -17,7 +17,7 @@
 utils::ExecutionStatistics::ExecutionStatistics(SpVMInterface &i, string matrix) : model(i), matrix(std::move(matrix)) {
 }
 
-void utils::ExecutionStatistics::runOpenMP() const {
+void utils::ExecutionStatistics::runOpenMP(int iteration, const string &reportPath, int numThreads) const {
     PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
     const auto n = new int(1);
     model.runPreprocessing(n);
@@ -31,7 +31,7 @@ void utils::ExecutionStatistics::runOpenMP() const {
     }
 
     // warm-up
-    model.runMultiplications(1);
+    model.runMultiplications(numThreads);
     utils::PrintUtils::logToFile("Run warm-up");
     const int iters = 15;
     PrintUtils::logToFile("Start testing with " + std::to_string(iters) + "iterations");
@@ -39,47 +39,35 @@ void utils::ExecutionStatistics::runOpenMP() const {
     d.AddColumn("Iteration");
     d.AddColumn("Execution_time", DATATYPES::Double);
     d.AddColumn("Num_Threads");
-    const std::vector<int> threads_to_test = {1, 2, 4, 8, 12, 16, 20, 24, 32, 48, 64, 72, 96};
-    for (const auto& tn: threads_to_test) {
-        std::string thread_msg = "Testing with " + std::to_string(tn) + " threads...";
-        PrintUtils::logToFile(thread_msg);
-        PrintUtils::printColored(thread_msg, PrintUtils::TerminalColor::YELLOW);
-        double best_ms = 1e9;
-        double sum_ms = 0;
-        const auto nThreads = new int(tn);
-        model.runPreprocessing(nThreads);
-        for (int t = 0; t < iters; ++t) {
-            auto t0 = std::chrono::steady_clock::now();
-            model.runMultiplications(tn);
-            auto t1 = std::chrono::steady_clock::now();
-            if (model.checkCorrectness()) {
-                PrintUtils::printColored("Result is correct", PrintUtils::TerminalColor::GREEN);
-                PrintUtils::logToFile(std::to_string(t + 1) + "/" + std::to_string(iters) + " Result is correct");
-            } else {
-                PrintUtils::printColored("Result is incorrect", PrintUtils::TerminalColor::RED);
-                PrintUtils::logToFile(std::to_string(t + 1) + "/" + std::to_string(iters) + " Result is incorrect");
-            }
-            double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-            d.AddRow(vector<Cell>{t, ms, tn});
-            if (ms < best_ms) best_ms = ms;
-            sum_ms += ms;
-        }
-        std::string msg = "Best computation time: " + std::to_string(best_ms) + " ms";
-        std::string avg = "Average computation time: " + std::to_string(sum_ms / iters) + " ms";
-        PrintUtils::logToFile(msg);
-        PrintUtils::logToFile(avg);
-        utils::PrintUtils::printColored(msg, utils::PrintUtils::TerminalColor::GREEN);
-        utils::PrintUtils::printColored(avg, utils::PrintUtils::TerminalColor::GREEN);
+    std::string thread_msg = "Testing with " + std::to_string(numThreads) + " threads...";
+    PrintUtils::logToFile(thread_msg);
+    PrintUtils::printColored(thread_msg, PrintUtils::TerminalColor::YELLOW);
+    const auto nThreads = new int(numThreads);
+    model.runPreprocessing(nThreads);
+    auto t0 = std::chrono::steady_clock::now();
+    model.runMultiplications(numThreads);
+    auto t1 = std::chrono::steady_clock::now();
+    if (model.checkCorrectness()) {
+        PrintUtils::printColored("Result is correct", PrintUtils::TerminalColor::GREEN);
+        PrintUtils::logToFile(std::to_string(iteration) + "/" + std::to_string(iters) + " Result is correct");
+    } else {
+        PrintUtils::printColored("Result is incorrect", PrintUtils::TerminalColor::RED);
+        PrintUtils::logToFile(std::to_string(iteration) + "/" + std::to_string(iters) + " Result is incorrect");
     }
+    double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+    d.AddRow(vector<Cell>{iteration, ms, numThreads});
+    std::string msg = "Computation time: " + std::to_string(ms) + " ms";
+    PrintUtils::logToFile(msg);
+    utils::PrintUtils::printColored(msg, utils::PrintUtils::TerminalColor::GREEN);
 
     std::string safeName = model.modelName;
     std::replace(safeName.begin(), safeName.end(), ' ', '_');
     std::string safeMatrix = matrix;
     std::replace(safeMatrix.begin(), safeMatrix.end(), '/', '_');
-    d.ExportToCSV("results/"+ std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
+    d.ExportToCSV(reportPath + std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
 }
 
-void utils::ExecutionStatistics::runSerial(int iteration, string reportPath) const {
+void utils::ExecutionStatistics::runSerial(int iteration, const string &reportPath) const {
     PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
 
     model.setDenseVector(SpVMInterface::generateRandomDenseVector(model.matrix.cols));
@@ -97,18 +85,18 @@ void utils::ExecutionStatistics::runSerial(int iteration, string reportPath) con
     DataTable d;
     d.AddColumn("Iteration");
     d.AddColumn("Execution_time", DATATYPES::Double);
-        double t0 = omp_get_wtime();
-        model.runMultiplications();
-        double t1 = omp_get_wtime();
-        if (model.checkCorrectness()) {
-            PrintUtils::printColored("Result is correct", PrintUtils::TerminalColor::GREEN);
-            PrintUtils::logToFile(std::to_string(iteration + 1) + " Result is correct");
-        } else {
-            PrintUtils::printColored("Result is incorrect", PrintUtils::TerminalColor::RED);
-            PrintUtils::logToFile(std::to_string(iteration + 1) + " Result is incorrect");
-        }
-        double ms = (t1 - t0) * 1000.0;
-        d.AddRow(vector<Cell>{iteration, ms});
+    double t0 = omp_get_wtime();
+    model.runMultiplications();
+    double t1 = omp_get_wtime();
+    if (model.checkCorrectness()) {
+        PrintUtils::printColored("Result is correct", PrintUtils::TerminalColor::GREEN);
+        PrintUtils::logToFile(std::to_string(iteration + 1) + " Result is correct");
+    } else {
+        PrintUtils::printColored("Result is incorrect", PrintUtils::TerminalColor::RED);
+        PrintUtils::logToFile(std::to_string(iteration + 1) + " Result is incorrect");
+    }
+    double ms = (t1 - t0) * 1000.0;
+    d.AddRow(vector<Cell>{iteration, ms});
 
     std::string msg = "Computation time: " + std::to_string(ms) + " ms";
     PrintUtils::logToFile(msg);
@@ -119,4 +107,3 @@ void utils::ExecutionStatistics::runSerial(int iteration, string reportPath) con
     std::replace(safeMatrix.begin(), safeMatrix.end(), '/', '_');
     d.ExportToCSV(reportPath + std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
 }
-

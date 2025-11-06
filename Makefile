@@ -1,5 +1,6 @@
 # Compilatore
-CXX := gcc
+CXX := g++
+
 
 # Flag di base
 BASE_CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -O0 -g -I.
@@ -26,6 +27,9 @@ SRCS_GENERIC := $(wildcard src/utils/*.cpp src/interfaces/*.cpp)
 SRCS_SERIAL  := $(wildcard src/serial/*.cpp)
 # Sorgenti specifici per compilare solo la versione seriale
 SRCS_SERIAL_ONLY := src/serial/main_serial.cpp src/serial/SpMVSerial.cpp
+# Sorgenti specifici per compilare solo la versione OpenMP
+SRCS_OMP_ONLY := src/openMP/main_openmp.cpp src/openMP/SpMVOpenMP.cpp
+SRCS_OMP_BINNING_ONLY := src/openMP/main_openmp_binning.cpp src/openMP/SpMVOpenMPBinning.cpp
 # CORREZIONE: Corretto il percorso da 'openmp' a 'openMP'
 SRCS_OMP     := $(wildcard src/openMP/*.cpp)
 
@@ -34,6 +38,8 @@ OBJS_MAIN    := $(SRCS_MAIN:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_GENERIC := $(SRCS_GENERIC:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_SERIAL  := $(SRCS_SERIAL:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_SERIAL_ONLY := $(SRCS_SERIAL_ONLY:%.cpp=$(OBJ_DIR)/%.o)
+OBJS_OMP_ONLY := $(SRCS_OMP_ONLY:%.cpp=$(OBJ_DIR)/%.o)
+OBJS_OMP_BINNING_ONLY := $(SRCS_OMP_BINNING_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP     := $(SRCS_OMP:%.cpp=$(OBJ_DIR)/%.o)
 OBJS         := $(OBJS_MAIN) $(OBJS_GENERIC) $(OBJS_SERIAL) $(OBJS_OMP)
 DEPS         := $(OBJS:.o=.d)
@@ -42,8 +48,13 @@ DEPS         := $(OBJS:.o=.d)
 TARGET := $(BIN_DIR)/deliverable1_2025_2026
 # Target specifico seriale
 TARGET_SERIAL := $(BIN_DIR)/serial_spmv
+# Target specifico OpenMP
+TARGET_OMP := $(BIN_DIR)/openmp_spmv
 
-.PHONY: all run clean datasets list-datasets clean-datasets serial-only
+TARGET_OMP_BINNING := $(BIN_DIR)/openmp_spmv_binning
+
+
+.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-only openmp-binning-only
 
 all: $(TARGET)
 
@@ -58,6 +69,19 @@ serial-only: $(TARGET_SERIAL)
 $(TARGET_SERIAL): $(OBJS_SERIAL_ONLY) $(OBJS_GENERIC)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(OBJS_SERIAL_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
+
+# Regola per compilare solo main_openmp e SpVMOpenMP (più oggetti generici)
+openmp-only: $(TARGET_OMP)
+
+$(TARGET_OMP): $(OBJS_OMP_ONLY) $(OBJS_GENERIC)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(OBJS_OMP_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
+
+openmp-binning-only: $(TARGET_OMP_BINNING)
+
+$(TARGET_OMP_BINNING): $(OBJS_OMP_BINNING_ONLY) $(OBJS_GENERIC)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(OBJS_OMP_BINNING_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Regole di compilazione specifiche
 $(OBJ_DIR)/main.o: main.cpp
