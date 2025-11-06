@@ -3,8 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="$ROOT_DIR/datasets"
-DEFAULT_BIN="/home/universita/Documenti/ParallelComputing/deliverable1_2025_2026/bin/serial_spmv"
-BIN="${BIN:-$DEFAULT_BIN}"
+BIN="${BIN:-}"
 RESULTS_DIR="$ROOT_DIR/results"
 
 make clean
