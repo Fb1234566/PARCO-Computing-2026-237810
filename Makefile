@@ -24,6 +24,8 @@ LIST_FILE   := datasets.txt
 SRCS_MAIN    := main.cpp
 SRCS_GENERIC := $(wildcard src/utils/*.cpp src/interfaces/*.cpp)
 SRCS_SERIAL  := $(wildcard src/serial/*.cpp)
+# Sorgenti specifici per compilare solo la versione seriale
+SRCS_SERIAL_ONLY := src/serial/main_serial.cpp src/serial/SpMVSerial.cpp
 # CORREZIONE: Corretto il percorso da 'openmp' a 'openMP'
 SRCS_OMP     := $(wildcard src/openMP/*.cpp)
 
@@ -31,14 +33,17 @@ SRCS_OMP     := $(wildcard src/openMP/*.cpp)
 OBJS_MAIN    := $(SRCS_MAIN:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_GENERIC := $(SRCS_GENERIC:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_SERIAL  := $(SRCS_SERIAL:%.cpp=$(OBJ_DIR)/%.o)
+OBJS_SERIAL_ONLY := $(SRCS_SERIAL_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP     := $(SRCS_OMP:%.cpp=$(OBJ_DIR)/%.o)
 OBJS         := $(OBJS_MAIN) $(OBJS_GENERIC) $(OBJS_SERIAL) $(OBJS_OMP)
 DEPS         := $(OBJS:.o=.d)
 
 # Target finale
 TARGET := $(BIN_DIR)/deliverable1_2025_2026
+# Target specifico seriale
+TARGET_SERIAL := $(BIN_DIR)/serial_spmv
 
-.PHONY: all run clean datasets list-datasets clean-datasets
+.PHONY: all run clean datasets list-datasets clean-datasets serial-only
 
 all: $(TARGET)
 
@@ -46,6 +51,13 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS) $(LDLIBS)
+
+# Regola per compilare solo main_serial e SpMVSerial (più oggetti generici)
+serial-only: $(TARGET_SERIAL)
+
+$(TARGET_SERIAL): $(OBJS_SERIAL_ONLY) $(OBJS_GENERIC)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(OBJS_SERIAL_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Regole di compilazione specifiche
 $(OBJ_DIR)/main.o: main.cpp

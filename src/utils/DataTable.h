@@ -28,7 +28,7 @@ namespace utils {
         void AddValue(const string &colName, const Cell &data);
         void AddValues(string colName, vector<Cell> data);
         void AddRow(const vector<Cell> &data);
-        void ExportToCSV(const string &filename) const;
+        void ExportToCSV(const string &filename, bool append = true) const;
     };
 
     ostream& operator<<(ostream& fs, const Cell& c);

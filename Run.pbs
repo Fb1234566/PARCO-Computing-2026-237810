@@ -12,10 +12,8 @@ gcc() {
     gcc-9.1.0 "$@"
 }
 gcc --version
-# Select the working directory
-cd "$PBS_O_WORKDIR"   # go to the directory where qsub was run
+cd "$PBS_O_WORKDIR"
 
 echo "Running in: $(pwd)"
-export OMP_NUM_THREADS=64
-# The code should be compiled before submitting the job
-make run
+
+./Run.sh

@@ -59,32 +59,45 @@ namespace utils {
         }
     }
 
-    void DataTable::ExportToCSV(const string &filename) const {
-        fstream exportFile(filename, ios::out);
-        if (!exportFile) throw std::runtime_error("Unable to open file: " + filename);
-
-        //Export Headers
-        for (size_t i = 0; i < header.size(); ++i) {
-            exportFile << header[i];
-            if (i + 1 < header.size()) exportFile << ',';
+     void DataTable::ExportToCSV(const string &filename, bool append) const {
+        std::streampos existingSize = 0;
+        if (append) {
+            std::ifstream in(filename, std::ios::binary);
+            if (in) {
+                in.seekg(0, std::ios::end);
+                existingSize = in.tellg();
+            }
         }
 
-        exportFile << endl;
+        std::ios::openmode mode = std::ios::out | (append ? std::ios::app : std::ios::trunc);
+        std::fstream exportFile(filename, mode);
+        if (!exportFile) throw std::runtime_error("Unable to open file: " + filename);
 
-        //Export Data
+        bool needHeader = !(append && existingSize > 0);
+        if (needHeader) {
+            for (size_t i = 0; i < header.size(); ++i) {
+                exportFile << header[i];
+                if (i + 1 < header.size()) exportFile << ',';
+            }
+            exportFile << std::endl;
+        }
+
+        // Calcola la lunghezza massima delle colonne
         int maxLenData = 0;
-        for_each(values.begin(), values.end(), [&maxLenData](const vector<Cell> d) {
-            if (maxLenData < d.size()) {
-                maxLenData = d.size();
+        for_each(values.begin(), values.end(), [&maxLenData](const std::vector<Cell> &d) {
+            if (maxLenData < static_cast<int>(d.size())) {
+                maxLenData = static_cast<int>(d.size());
             }
         });
 
         for (int row = 0; row < maxLenData; row++) {
-            for (int col = 0; col < values.size(); col++) {
-                exportFile << values[col][row];
-                if (col + 1 < header.size()) exportFile << ',';
+            for (int col = 0; col < static_cast<int>(values.size()); col++) {
+                if (row < static_cast<int>(values[col].size())) {
+                    exportFile << values[col][row];
+                }
+                if (col + 1 < static_cast<int>(header.size())) exportFile << ',';
             }
-            exportFile << endl;
+            exportFile << std::endl;
         }
     }
 

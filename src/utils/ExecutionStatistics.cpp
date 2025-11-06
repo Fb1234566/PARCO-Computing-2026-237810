@@ -79,7 +79,7 @@ void utils::ExecutionStatistics::runOpenMP() const {
     d.ExportToCSV("results/"+ std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
 }
 
-void utils::ExecutionStatistics::runSerial() const {
+void utils::ExecutionStatistics::runSerial(int iteration, string reportPath) const {
     PrintUtils::printColored("Running " + model.modelName + "...", utils::PrintUtils::TerminalColor::CYAN);
 
     model.setDenseVector(SpVMInterface::generateRandomDenseVector(model.matrix.cols));
@@ -94,41 +94,29 @@ void utils::ExecutionStatistics::runSerial() const {
     // warm-up
     model.runMultiplications();
     utils::PrintUtils::logToFile("Run warm-up");
-    const int iters = 15;
-    double best_ms = 1e9;
-    double sum_ms = 0;
-    PrintUtils::logToFile("Start testing with " + std::to_string(iters) + "iterations");
     DataTable d;
     d.AddColumn("Iteration");
     d.AddColumn("Execution_time", DATATYPES::Double);
-    for (int t = 0; t < iters; ++t) {
         double t0 = omp_get_wtime();
         model.runMultiplications();
         double t1 = omp_get_wtime();
         if (model.checkCorrectness()) {
             PrintUtils::printColored("Result is correct", PrintUtils::TerminalColor::GREEN);
-            PrintUtils::logToFile(std::to_string(t + 1) + "/" + std::to_string(iters) + " Result is correct");
+            PrintUtils::logToFile(std::to_string(iteration + 1) + " Result is correct");
         } else {
             PrintUtils::printColored("Result is incorrect", PrintUtils::TerminalColor::RED);
-            PrintUtils::logToFile(std::to_string(t + 1) + "/" + std::to_string(iters) + " Result is incorrect");
+            PrintUtils::logToFile(std::to_string(iteration + 1) + " Result is incorrect");
         }
         double ms = (t1 - t0) * 1000.0;
-        d.AddRow(vector<Cell>{t, ms});
-        if (ms < best_ms) best_ms = ms;
-        sum_ms += ms;
-    }
+        d.AddRow(vector<Cell>{iteration, ms});
 
-    // stampa risultato
-    std::string msg = "Best computation time: " + std::to_string(best_ms) + " ms";
-    std::string avg = "Average computation time: " + std::to_string(sum_ms / iters) + " ms";
+    std::string msg = "Computation time: " + std::to_string(ms) + " ms";
     PrintUtils::logToFile(msg);
-    PrintUtils::logToFile(avg);
     utils::PrintUtils::printColored(msg, utils::PrintUtils::TerminalColor::GREEN);
-    utils::PrintUtils::printColored(avg, utils::PrintUtils::TerminalColor::GREEN);
     std::string safeName = model.modelName;
     std::replace(safeName.begin(), safeName.end(), ' ', '_');
     std::string safeMatrix = matrix;
     std::replace(safeMatrix.begin(), safeMatrix.end(), '/', '_');
-    d.ExportToCSV("results/"+ std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
+    d.ExportToCSV(reportPath + std::string("stats_") + safeName + "_" + safeMatrix + ".csv");
 }
 
