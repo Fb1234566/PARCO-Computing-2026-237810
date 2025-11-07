@@ -1,5 +1,5 @@
 # Compilatore
-CXX := g++
+CXX := g++-9.1.0
 
 
 # Flag di base
