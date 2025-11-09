@@ -3,8 +3,8 @@
 #PBS -o ./PARCO_SpMV_Serial.o
 #PBS -e ./PARCO_SpMV_Serial.e
 #PBS -q short_cpuQ
-#PBS -l walltime=0:40:00
-#PBS -l select=1:ncpus=64:mem=20gb
+#PBS -l walltime=06:00:00
+#PBS -l select=1:ncpus=96:mem=50gb
 
 # Modules for C
 module load gcc91
@@ -18,4 +18,4 @@ cd "$PBS_O_WORKDIR"
 
 echo "Running in: $(pwd)"
 
-./Run.sh
+./Run.sh "$MATRIX"
