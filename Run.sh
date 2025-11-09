@@ -11,10 +11,6 @@ BIN_SERIAL="${BIN_SERIAL:-}"
 BIN_OPENMP="${BIN_OPENMP:-}"
 BIN_BINNING="${BIN_BINNING:-}"
 
-make clean
-make serial-only
-make openmp-only
-make openmp-binning-only
 
 python3 -m venv .venv
 
