@@ -10,6 +10,7 @@ PLOTS_DIR="$ROOT_DIR/plots"
 BIN_SERIAL="${BIN_SERIAL:-}"
 BIN_OPENMP="${BIN_OPENMP:-}"
 BIN_BINNING="${BIN_BINNING:-}"
+source ./.venv/bin/activate
 
 # Function to resolve a binary: search for executable or file and make it executable
 resolve_bin() {
