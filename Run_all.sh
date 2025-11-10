@@ -8,6 +8,13 @@ make serial-only
 make openmp-only
 make openmp-binning-only
 
+module load gcc91
+module load python-3.10.14
+
+gcc() {
+    gcc-9.1.0 "$@"
+}
+
 python3 -m venv .venv
 
 source ./.venv/bin/activate
