@@ -8,6 +8,13 @@ make serial-only
 make openmp-only
 make openmp-binning-only
 
+python3 -m venv .venv
+
+source ./.venv/bin/activate
+
+pip install numpy matplotlib pandas
+
+
 for f in "$DATA_DIR"/*; do
   if [[ -f "$f" ]]; then
     abs_path=$(realpath "$f")

@@ -11,13 +11,6 @@ BIN_SERIAL="${BIN_SERIAL:-}"
 BIN_OPENMP="${BIN_OPENMP:-}"
 BIN_BINNING="${BIN_BINNING:-}"
 
-
-python3 -m venv .venv
-
-source ./.venv/bin/activate
-
-pip install numpy matplotlib pandas
-
 # Function to resolve a binary: search for executable or file and make it executable
 resolve_bin() {
   varname="$1"; shift
@@ -164,6 +157,3 @@ done
 
 # Analyze results for this matrix only
 python3 ./scripts/analyze_results.py "$OUTDIR" "$PLOTDIR"
-
-deactivate
-rm -rf ./.venv
