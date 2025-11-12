@@ -10,7 +10,6 @@ PLOTS_DIR="$ROOT_DIR/plots"
 BIN_SERIAL="${BIN_SERIAL:-}"
 BIN_OPENMP="${BIN_OPENMP:-}"
 BIN_BINNING="${BIN_BINNING:-}"
-source ./.venv/bin/activate
 
 # Function to resolve a binary: search for executable or file and make it executable
 resolve_bin() {
@@ -65,6 +64,7 @@ resolve_bin() {
 resolve_bin BIN_SERIAL serial_spmv
 resolve_bin BIN_OPENMP openmp_spmv
 resolve_bin BIN_BINNING openmp_spmv_binning
+resolve_bin BIN_DYNAMIC openmp_spmv_dynamic
 
 if [ ! -d "$DATA_DIR" ]; then
   echo "Data directory not found: \`$DATA_DIR\`" >&2
@@ -84,7 +84,7 @@ TOP_PLOTDIR="${TOP_PLOTDIR%/}/"
 
 echo "Results written to: \`$TOP_OUTDIR\`"
 echo "Plots written to: \`$TOP_PLOTDIR\`"
-echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`"
+echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`, dynamic=\`$BIN_DYNAMIC\`"
 
 THREADS=(1 2 4 6 8 12 16 24 32 48 64 96)
 ITERATIONS=15
@@ -156,5 +156,13 @@ for nthreads in "${THREADS[@]}"; do
   done
 done
 
+# OpenMP Dynamic: for each thread count run ITERATIONS times and pass the current index
+for nthreads in "${THREADS[@]}"; do
+  for iter in $(seq 1 "$ITERATIONS"); do
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dynamic threads=$nthreads iter=$iter/$ITERATIONS: $RELPATH -> $OUTDIR"
+    if ! "$BIN_DYNAMIC" "$RELPATH" "$iter" "$OUTDIR" "$nthreads"; then
+      echo "Execution failed for \`$RELPATH\` threads $nthreads iter $iter (dynamic)" >&2
+
+source ./.venv/bin/activate
 # Analyze results for this matrix only
 python3 ./scripts/analyze_results.py "$OUTDIR" "$PLOTDIR"

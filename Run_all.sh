@@ -7,6 +7,7 @@ make clean
 make serial-only
 make openmp-only
 make openmp-binning-only
+make openmp-dynamic-only
 
 module load gcc91
 module load python-3.10.14
@@ -16,8 +17,6 @@ gcc() {
 }
 
 python3 -m venv .venv
-
-source ./.venv/bin/activate
 
 pip install numpy matplotlib pandas
 
