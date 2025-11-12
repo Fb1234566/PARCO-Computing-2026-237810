@@ -77,16 +77,6 @@ fi
 mkdir -p "$RESULTS_DIR"
 mkdir -p "$PLOTS_DIR"
 
-ts="$(date '+%Y-%m-%d_%H-%M-%S-%3N')"
-TOP_OUTDIR="$RESULTS_DIR/run_${ts}"
-TOP_PLOTDIR="$PLOTS_DIR/run_${ts}"
-mkdir -p "$TOP_OUTDIR"
-mkdir -p "$TOP_PLOTDIR"
-TOP_OUTDIR="${TOP_OUTDIR%/}/"
-TOP_PLOTDIR="${TOP_PLOTDIR%/}/"
-
-echo "Results written to: \`$TOP_OUTDIR\`"
-echo "Plots written to: \`$TOP_PLOTDIR\`"
 echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`, dynamic=\`$BIN_DYNAMIC\`, guided=\`$BIN_GUIDED\`"
 
 THREADS=(1 2 4 6 8 12 16 24 32 48 64 96)
@@ -122,11 +112,21 @@ fi
 MATRIX_ID="${RELPATH//\//__}"
 MATRIX_ID="${MATRIX_ID// /_}"   # replace spaces with underscore
 
-OUTDIR="$TOP_OUTDIR$MATRIX_ID/"
-PLOTDIR="$TOP_PLOTDIR$MATRIX_ID/"
+# Create matrix-specific base directories
+MATRIX_OUTDIR="$RESULTS_DIR/$MATRIX_ID"
+MATRIX_PLOTDIR="$PLOTS_DIR/$MATRIX_ID"
+mkdir -p "$MATRIX_OUTDIR"
+mkdir -p "$MATRIX_PLOTDIR"
+
+# Create timestamped subdirectories inside matrix directories
+ts="$(date '+%Y-%m-%d_%H-%M-%S-%3N')"
+OUTDIR="$MATRIX_OUTDIR/run_${ts}/"
+PLOTDIR="$MATRIX_PLOTDIR/run_${ts}/"
 mkdir -p "$OUTDIR"
 mkdir -p "$PLOTDIR"
 
+echo "Results written to: \`$OUTDIR\`"
+echo "Plots written to: \`$PLOTDIR\`"
 echo "Running tests for matrix: \`$RELPATH\`"
 echo "Matrix results directory: \`$OUTDIR\`"
 echo "Matrix plots directory: \`$PLOTDIR\`"
@@ -182,3 +182,4 @@ done
 source ./.venv/bin/activate
 # Analyze results for this matrix only
 python3 ./scripts/analyze_results.py "$OUTDIR" "$PLOTDIR"
+deactivate
