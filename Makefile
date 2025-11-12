@@ -1,5 +1,5 @@
 # Compilatore
-CXX := g++-9.1.0
+CXX := g++
 
 
 # Flag di base
@@ -31,6 +31,7 @@ SRCS_SERIAL_ONLY := src/serial/main_serial.cpp src/serial/SpMVSerial.cpp
 SRCS_OMP_ONLY := src/openMP/main_openmp_static.cpp src/openMP/SpMVOpenMPStatic.cpp
 SRCS_OMP_BINNING_ONLY := src/openMP/main_openmp_binning.cpp src/openMP/SpMVOpenMPBinning.cpp
 SRCS_OMP_DYNAMIC_ONLY := src/openMP/main_openmp_dynamic.cpp src/openMP/SpMVOpenMPDynamic.cpp
+SRCS_OMP_GUIDED_ONLY := src/openMP/main_openmp_guided.cpp src/openMP/SpMVOpenMPGuided.cpp
 # CORREZIONE: Corretto il percorso da 'openmp' a 'openMP'
 SRCS_OMP     := $(wildcard src/openMP/*.cpp)
 
@@ -41,6 +42,7 @@ OBJS_SERIAL  := $(SRCS_SERIAL:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_SERIAL_ONLY := $(SRCS_SERIAL_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP_ONLY := $(SRCS_OMP_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP_BINNING_ONLY := $(SRCS_OMP_BINNING_ONLY:%.cpp=$(OBJ_DIR)/%.o)
+OBJS_OMP_GUIDED_ONLY := $(SRCS_OMP_GUIDED_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP_DYNAMIC_ONLY := $(SRCS_OMP_DYNAMIC_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP     := $(SRCS_OMP:%.cpp=$(OBJ_DIR)/%.o)
 OBJS         := $(OBJS_MAIN) $(OBJS_GENERIC) $(OBJS_SERIAL) $(OBJS_OMP)
@@ -55,8 +57,10 @@ TARGET_OMP := $(BIN_DIR)/openmp_spmv
 
 TARGET_OMP_BINNING := $(BIN_DIR)/openmp_spmv_binning
 
+TARGET_OMP_GUIDED := $(BIN_DIR)/openmp_spmv_guided
 TARGET_OMP_DYNAMIC := $(BIN_DIR)/openmp_spmv_dynamic
 
+.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-static-only openmp-binning-only openmp-dynamic-only openmp-guided-only
 
 .PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-static-only openmp-binning-only openmp-dynamic-only
 
@@ -92,6 +96,12 @@ openmp-dynamic-only: $(TARGET_OMP_DYNAMIC)
 $(TARGET_OMP_DYNAMIC): $(OBJS_OMP_DYNAMIC_ONLY) $(OBJS_GENERIC)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(OBJS_OMP_DYNAMIC_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
+
+openmp-guided-only: $(TARGET_OMP_GUIDED)
+
+$(TARGET_OMP_GUIDED): $(OBJS_OMP_GUIDED_ONLY) $(OBJS_GENERIC)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(OBJS_OMP_GUIDED_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Regole di compilazione specifiche
 $(OBJ_DIR)/main.o: main.cpp

@@ -6,7 +6,7 @@
 #include <cstring>
 #include <filesystem>
 
-#include "SpMVOpenMPStatic.h"
+#include "SpMVOpenMPGuided.h"
 #include "../utils/MatrixReader.h"
 #include "../utils/ExecutionStatistics.h"
 #include "../utils/PrintUtils.h"
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     utils::PrintUtils::logToFile("Serial program started");
     utils::PrintUtils::logToFile(std::string("Output directory: ") + outputDirStr);
     try {
-        SpMVOpenMPStatic openMP("OpenMP SpMV Static Scheduling");
+        SpMVOpenMPGuided openMP("OpenMP SpMV Guided Scheduling");
         utils::MatrixReader reader;
 
         std::cout << "============================\n";
@@ -101,3 +101,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+

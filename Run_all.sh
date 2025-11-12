@@ -8,6 +8,7 @@ make serial-only
 make openmp-static-only
 make openmp-binning-only
 make openmp-dynamic-only
+make openmp-guided-only
 
 module load gcc91
 module load python-3.10.14

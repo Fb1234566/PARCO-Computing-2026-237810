@@ -10,6 +10,8 @@ PLOTS_DIR="$ROOT_DIR/plots"
 BIN_SERIAL="${BIN_SERIAL:-}"
 BIN_OPENMP="${BIN_OPENMP:-}"
 BIN_BINNING="${BIN_BINNING:-}"
+BIN_DYNAMIC="${BIN_DYNAMIC:-}"
+BIN_GUIDED="${BIN_GUIDED:-}"
 
 # Function to resolve a binary: search for executable or file and make it executable
 resolve_bin() {
@@ -65,6 +67,7 @@ resolve_bin BIN_SERIAL serial_spmv
 resolve_bin BIN_OPENMP openmp_spmv
 resolve_bin BIN_BINNING openmp_spmv_binning
 resolve_bin BIN_DYNAMIC openmp_spmv_dynamic
+resolve_bin BIN_GUIDED openmp_spmv_guided
 
 if [ ! -d "$DATA_DIR" ]; then
   echo "Data directory not found: \`$DATA_DIR\`" >&2
@@ -84,7 +87,7 @@ TOP_PLOTDIR="${TOP_PLOTDIR%/}/"
 
 echo "Results written to: \`$TOP_OUTDIR\`"
 echo "Plots written to: \`$TOP_PLOTDIR\`"
-echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`, dynamic=\`$BIN_DYNAMIC\`"
+echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`, dynamic=\`$BIN_DYNAMIC\`, guided=\`$BIN_GUIDED\`"
 
 THREADS=(1 2 4 6 8 12 16 24 32 48 64 96)
 ITERATIONS=10
@@ -162,6 +165,19 @@ for nthreads in "${THREADS[@]}"; do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dynamic threads=$nthreads iter=$iter/$ITERATIONS: $RELPATH -> $OUTDIR"
     if ! "$BIN_DYNAMIC" "$RELPATH" "$iter" "$OUTDIR" "$nthreads"; then
       echo "Execution failed for \`$RELPATH\` threads $nthreads iter $iter (dynamic)" >&2
+    fi
+  done
+done
+
+# OpenMP Guided: for each thread count run ITERATIONS times and pass the current index
+for nthreads in "${THREADS[@]}"; do
+  for iter in $(seq 1 "$ITERATIONS"); do
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Guided threads=$nthreads iter=$iter/$ITERATIONS: $RELPATH -> $OUTDIR"
+    if ! "$BIN_GUIDED" "$RELPATH" "$iter" "$OUTDIR" "$nthreads"; then
+      echo "Execution failed for \`$RELPATH\` threads $nthreads iter $iter (guided)" >&2
+    fi
+  done
+done
 
 source ./.venv/bin/activate
 # Analyze results for this matrix only
