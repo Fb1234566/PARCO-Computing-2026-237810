@@ -87,8 +87,8 @@ echo "Plots written to: \`$TOP_PLOTDIR\`"
 echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`, dynamic=\`$BIN_DYNAMIC\`"
 
 THREADS=(1 2 4 6 8 12 16 24 32 48 64 96)
-ITERATIONS=15
-SERIAL_RUNS=15
+ITERATIONS=10
+SERIAL_RUNS=10
 
 # Expect a single matrix path as first argument
 if [ $# -lt 1 ]; then
