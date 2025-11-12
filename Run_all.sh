@@ -5,7 +5,7 @@ DATA_DIR="datasets"
 
 make clean
 make serial-only
-make openmp-only
+make openmp-static-only
 make openmp-binning-only
 make openmp-dynamic-only
 

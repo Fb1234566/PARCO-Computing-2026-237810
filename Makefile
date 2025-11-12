@@ -28,7 +28,7 @@ SRCS_SERIAL  := $(wildcard src/serial/*.cpp)
 # Sorgenti specifici per compilare solo la versione seriale
 SRCS_SERIAL_ONLY := src/serial/main_serial.cpp src/serial/SpMVSerial.cpp
 # Sorgenti specifici per compilare solo la versione OpenMP
-SRCS_OMP_ONLY := src/openMP/main_openmp.cpp src/openMP/SpMVOpenMP.cpp
+SRCS_OMP_ONLY := src/openMP/main_openmp_static.cpp src/openMP/SpMVOpenMPStatic.cpp
 SRCS_OMP_BINNING_ONLY := src/openMP/main_openmp_binning.cpp src/openMP/SpMVOpenMPBinning.cpp
 SRCS_OMP_DYNAMIC_ONLY := src/openMP/main_openmp_dynamic.cpp src/openMP/SpMVOpenMPDynamic.cpp
 # CORREZIONE: Corretto il percorso da 'openmp' a 'openMP'
@@ -58,7 +58,7 @@ TARGET_OMP_BINNING := $(BIN_DIR)/openmp_spmv_binning
 TARGET_OMP_DYNAMIC := $(BIN_DIR)/openmp_spmv_dynamic
 
 
-.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-only openmp-binning-only openmp-dynamic-only
+.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-static-only openmp-binning-only openmp-dynamic-only
 
 all: $(TARGET)
 
@@ -75,7 +75,7 @@ $(TARGET_SERIAL): $(OBJS_SERIAL_ONLY) $(OBJS_GENERIC)
 	$(CXX) $(OBJS_SERIAL_ONLY) $(OBJS_GENERIC) -o $@ $(LDFLAGS) $(LDLIBS)
 
 # Regola per compilare solo main_openmp e SpVMOpenMP (più oggetti generici)
-openmp-only: $(TARGET_OMP)
+openmp-static-only: $(TARGET_OMP)
 
 $(TARGET_OMP): $(OBJS_OMP_ONLY) $(OBJS_GENERIC)
 	@mkdir -p $(BIN_DIR)

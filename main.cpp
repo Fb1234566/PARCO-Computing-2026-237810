@@ -10,7 +10,7 @@
 #include "src/serial/SpMVSerial.h"
 #include "src/utils/ExecutionStatistics.h"
 #include "src/utils/PrintUtils.h"
-#include "src/openMP/SpMVOpenMP.h"
+#include "src/openMP/SpMVOpenMPStatic.h"
 #include "src/openMP/SpMVOpenMPBinning.h"
 
 static void traverse_directory(const std::string& dir, std::vector<std::string>& files) {
@@ -41,7 +41,7 @@ static void traverse_directory(const std::string& dir, std::vector<std::string>&
 int main() {
     const std::string dataset_dir = "datasets";
     SpMVSerial serial("serial SpMV");
-    SpMVOpenMP openMP("openMP SpMV");
+    SpMVOpenMPStatic openMP("openMP SpMV");
     SpMVOpenMPBinning openMPBinning("OpenMPBinning SpMV");
     utils::PrintUtils::logToFile("Program started");
 

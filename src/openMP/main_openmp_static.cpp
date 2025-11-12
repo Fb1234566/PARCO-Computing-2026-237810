@@ -6,7 +6,7 @@
 #include <cstring>
 #include <filesystem>
 
-#include "SpMVOpenMP.h"
+#include "SpMVOpenMPStatic.h"
 #include "../utils/MatrixReader.h"
 #include "../utils/ExecutionStatistics.h"
 #include "../utils/PrintUtils.h"
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     utils::PrintUtils::logToFile("Serial program started");
     utils::PrintUtils::logToFile(std::string("Output directory: ") + outputDirStr);
     try {
-        SpMVOpenMP openMP("OpenMP SpMV");
+        SpMVOpenMPStatic openMP("OpenMP SpMV");
         utils::MatrixReader reader;
 
         std::cout << "============================\n";

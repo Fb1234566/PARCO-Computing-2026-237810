@@ -2,29 +2,29 @@
 // Created by universita on 30/10/25.
 //
 
-#include "SpMVOpenMP.h"
+#include "SpMVOpenMPStatic.h"
 
 #include <iostream>
 #include <omp.h>
 #include <stdexcept>
 
-SpMVOpenMP::SpMVOpenMP(const string &n):SpVMInterface(n) {
+SpMVOpenMPStatic::SpMVOpenMPStatic(const string &n):SpVMInterface(n) {
 
 }
 
-SpMVOpenMP::SpMVOpenMP(const string &n, const utils::CSRMatrix &m, const vector<double> &v): SpVMInterface(n, m, v)  {
+SpMVOpenMPStatic::SpMVOpenMPStatic(const string &n, const utils::CSRMatrix &m, const vector<double> &v): SpVMInterface(n, m, v)  {
 
 }
 
-SpMVOpenMP::~SpMVOpenMP() {
+SpMVOpenMPStatic::~SpMVOpenMPStatic() {
 }
 
-vector<double> SpMVOpenMP::computeMultiplication(int numThreads) const {
+vector<double> SpMVOpenMPStatic::computeMultiplication(int numThreads) const {
     const vector<double> &values = matrix.val;
     const vector<int> &rowPointer = matrix.rowPointer;
     const vector<int> &colIndex = matrix.colIndex;
     vector<double> result(rowPointer.size() - 1, 0.0f);
-#pragma omp parallel for num_threads(numThreads)
+#pragma omp parallel for num_threads(numThreads) schedule(static)
     for (int row = 0; row < rowPointer.size() - 1; ++row) {
         double partial_sum = 0.0f;
         for (int idx = rowPointer[row]; idx < rowPointer[row + 1]; ++idx) {
@@ -36,20 +36,20 @@ vector<double> SpMVOpenMP::computeMultiplication(int numThreads) const {
     return result;
 }
 
-void SpMVOpenMP::runMultiplications() {
+void SpMVOpenMPStatic::runMultiplications() {
     throw logic_error("The model is running OpenMP, not serial");
 }
 
-vector<double> SpMVOpenMP::computeMultiplication() const {
+vector<double> SpMVOpenMPStatic::computeMultiplication() const {
     throw logic_error("The model is running OpenMP, not serial");
 }
 
 
-void SpMVOpenMP::runMultiplications(int numThreads) {
+void SpMVOpenMPStatic::runMultiplications(int numThreads) {
     result = computeMultiplication(numThreads);
 }
 
-void SpMVOpenMP::runPreprocessing(void* arg) {
+void SpMVOpenMPStatic::runPreprocessing(void* arg) {
 }
 
 
