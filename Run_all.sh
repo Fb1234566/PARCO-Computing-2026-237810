@@ -38,8 +38,8 @@ for f in "$DATA_DIR"/*; do
     matrix_name=$(basename "$f" | sed 's/\.[^.]*$//')
 
     # Use absolute paths
-    output_dir="$WORKDIR/results/run_${RUN_TIMESTAMP}/${matrix_name}"
-    graph_dir="$WORKDIR/plots/run_${RUN_TIMESTAMP}/${matrix_name}"
+    output_dir="$WORKDIR/results/run_${RUN_TIMESTAMP}/${matrix_name}/"
+    graph_dir="$WORKDIR/plots/run_${RUN_TIMESTAMP}/${matrix_name}/"
 
     mkdir -p "$output_dir"
     mkdir -p "$graph_dir"
