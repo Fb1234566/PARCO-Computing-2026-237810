@@ -3,8 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="$ROOT_DIR/datasets"
-RESULTS_DIR="$ROOT_DIR/results"
-PLOTS_DIR="$ROOT_DIR/plots"
 
 # Possible overrides from outside:
 BIN_SERIAL="${BIN_SERIAL:-}"
@@ -74,32 +72,32 @@ if [ ! -d "$DATA_DIR" ]; then
   exit 1
 fi
 
-mkdir -p "$RESULTS_DIR"
-mkdir -p "$PLOTS_DIR"
-
 echo "Executables used: serial=\`$BIN_SERIAL\`, openmp=\`$BIN_OPENMP\`, binning=\`$BIN_BINNING\`, dynamic=\`$BIN_DYNAMIC\`, guided=\`$BIN_GUIDED\`"
 
-THREADS=(1 2 4 6 8 12 16 24 32 48 64 96)
+THREADS=(1 2 4 6 8 12 16 24 32)
 ITERATIONS=10
 SERIAL_RUNS=10
 
-# Expect a single matrix path as first argument
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 <matrix_path>" >&2
-  deactivate || true
-  rm -rf ./.venv
+# Expect matrix path, results directory and plots directory as arguments
+if [ $# -lt 3 ]; then
+  echo "Usage: $0 <matrix_path> <results_dir> <plots_dir>" >&2
   exit 1
 fi
 
 MATRIX_PATH_RAW="$1"
+OUTDIR="$2"
+PLOTDIR="$3"
+
 MATRIX_PATH="$(realpath "$MATRIX_PATH_RAW" 2>/dev/null || true)"
 
 if [ -z "$MATRIX_PATH" ] || [ ! -f "$MATRIX_PATH" ]; then
   echo "Matrix file not found: \`$MATRIX_PATH_RAW\`" >&2
-  deactivate || true
-  rm -rf ./.venv
   exit 1
 fi
+
+# Verify/create output directories
+mkdir -p "$OUTDIR"
+mkdir -p "$PLOTDIR"
 
 # Compute RELPATH relative to ROOT_DIR when possible, otherwise use absolute path
 if [[ "$MATRIX_PATH" == "$ROOT_DIR/"* ]]; then
@@ -108,30 +106,11 @@ else
   RELPATH="$MATRIX_PATH"
 fi
 
-# Create a safe matrix identifier for per-matrix folders (replace '/' with '__')
-MATRIX_ID="${RELPATH//\//__}"
-MATRIX_ID="${MATRIX_ID// /_}"   # replace spaces with underscore
-
-# Create matrix-specific base directories
-MATRIX_OUTDIR="$RESULTS_DIR/$MATRIX_ID"
-MATRIX_PLOTDIR="$PLOTS_DIR/$MATRIX_ID"
-mkdir -p "$MATRIX_OUTDIR"
-mkdir -p "$MATRIX_PLOTDIR"
-
-# Create timestamped subdirectories inside matrix directories
-ts="$(date '+%Y-%m-%d_%H-%M-%S-%3N')"
-OUTDIR="$MATRIX_OUTDIR/run_${ts}/"
-PLOTDIR="$MATRIX_PLOTDIR/run_${ts}/"
-mkdir -p "$OUTDIR"
-mkdir -p "$PLOTDIR"
-
 echo "Results written to: \`$OUTDIR\`"
 echo "Plots written to: \`$PLOTDIR\`"
 echo "Running tests for matrix: \`$RELPATH\`"
-echo "Matrix results directory: \`$OUTDIR\`"
-echo "Matrix plots directory: \`$PLOTDIR\`"
 
-# Serial: 15 runs for this single file
+# Serial: 10 runs for this single file
 for run in $(seq 1 "$SERIAL_RUNS"); do
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Serial run $run/$SERIAL_RUNS: $RELPATH -> $OUTDIR"
   if ! "$BIN_SERIAL" "$RELPATH" "$run" "$OUTDIR"; then
