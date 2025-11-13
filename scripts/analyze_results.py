@@ -520,69 +520,123 @@ def create_comparison_plots(all_matrix_data, output_dir):
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: python analyze_results.py <results_run_folder> <plots_run_folder>")
+        print("Usage: python analyze_results.py <results_matrix_folder> <plots_matrix_folder>")
         sys.exit(1)
 
-    results_run_folder = Path(sys.argv[1])
-    plots_run_folder = Path(sys.argv[2])
+    results_matrix_folder = Path(sys.argv[1])
+    plots_matrix_folder = Path(sys.argv[2])
 
-    if not results_run_folder.is_dir():
-        print(f"Error: Results path '{results_run_folder}' is not a valid directory.")
+    if not results_matrix_folder.is_dir():
+        print(f"Error: Results path '{results_matrix_folder}' is not a valid directory.")
         sys.exit(1)
 
-    print(f"Scanning directory: {results_run_folder}")
+    # Get matrix name from the folder
+    matrix_name = results_matrix_folder.name
+    print(f"Processing single matrix: {matrix_name}")
 
-    # Scan for matrix subdirectories
-    matrix_dirs = [d for d in results_run_folder.iterdir() if d.is_dir()]
+    # Get parent folder (run_TIMESTAMP)
+    results_run_folder = results_matrix_folder.parent
+    plots_run_folder = plots_matrix_folder.parent
 
-    if not matrix_dirs:
-        print("No matrix subdirectories found.")
+    print(f"Results run folder: {results_run_folder}")
+    print(f"Plots run folder: {plots_run_folder}")
+
+    # Create plots directory for this matrix
+    plots_matrix_folder.mkdir(parents=True, exist_ok=True)
+
+    # Find CSV files for this specific matrix
+    matrix_files = {}
+
+    for csv_file in results_matrix_folder.glob("*.csv"):
+        filename = csv_file.name
+
+        # Classify file type
+        if 'stats_serial_' in filename:
+            matrix_files['serial'] = str(csv_file)
+        elif 'Binning' in filename:
+            matrix_files['openmp_binning'] = str(csv_file)
+        elif 'Dynamic' in filename:
+            matrix_files['openmp_dynamic'] = str(csv_file)
+        elif 'Guided' in filename:
+            matrix_files['openmp_guided'] = str(csv_file)
+        elif 'Static' in filename:
+            matrix_files['openmp_static'] = str(csv_file)
+
+    if 'serial' not in matrix_files or len(matrix_files) <= 1:
+        print(f"Error: Missing serial or OpenMP files for matrix '{matrix_name}'.")
         sys.exit(1)
 
-    print(f"Found {len(matrix_dirs)} matrix directories")
+    print(f"Found {len(matrix_files)} CSV files for matrix {matrix_name}")
 
-    plots_run_folder.mkdir(parents=True, exist_ok=True)
-    print(f"\nSaving plots to: {plots_run_folder}")
+    # Process this matrix
+    result = process_matrix_data(matrix_name, matrix_files, str(plots_matrix_folder))
 
-    all_matrix_data = {}
+    if not result:
+        print(f"Failed to process matrix '{matrix_name}'.")
+        sys.exit(1)
 
-    for matrix_dir in matrix_dirs:
-        matrix_name = matrix_dir.name
-        print(f"\nProcessing matrix directory: {matrix_name}")
+    # Now check if there are other matrices in the parent folder
+    all_matrix_data = {matrix_name: result}
 
-        matrix_files = {}
+    # Scan for other matrix subdirectories in the parent folder
+    for other_matrix_dir in results_run_folder.iterdir():
+        if not other_matrix_dir.is_dir() or other_matrix_dir == results_matrix_folder:
+            continue
 
-        for csv_file in matrix_dir.glob("*.csv"):
+        other_matrix_name = other_matrix_dir.name
+        print(f"\nFound additional matrix directory: {other_matrix_name}")
+
+        other_matrix_files = {}
+
+        for csv_file in other_matrix_dir.glob("*.csv"):
             filename = csv_file.name
 
-            # Classify file type
             if 'stats_serial_' in filename:
-                matrix_files['serial'] = str(csv_file)
+                other_matrix_files['serial'] = str(csv_file)
             elif 'Binning' in filename:
-                matrix_files['openmp_binning'] = str(csv_file)
+                other_matrix_files['openmp_binning'] = str(csv_file)
             elif 'Dynamic' in filename:
-                matrix_files['openmp_dynamic'] = str(csv_file)
+                other_matrix_files['openmp_dynamic'] = str(csv_file)
             elif 'Guided' in filename:
-                matrix_files['openmp_guided'] = str(csv_file)
+                other_matrix_files['openmp_guided'] = str(csv_file)
             elif 'Static' in filename:
-                matrix_files['openmp_static'] = str(csv_file)
+                other_matrix_files['openmp_static'] = str(csv_file)
 
-        if 'serial' in matrix_files and len(matrix_files) > 1:
-            # Create matrix-specific plot directory
-            matrix_plot_dir = plots_run_folder / matrix_name
-            matrix_plot_dir.mkdir(parents=True, exist_ok=True)
+        if 'serial' in other_matrix_files and len(other_matrix_files) > 1:
+            other_plot_dir = plots_run_folder / other_matrix_name
+            other_plot_dir.mkdir(parents=True, exist_ok=True)
 
-            result = process_matrix_data(matrix_name, matrix_files, str(matrix_plot_dir))
-            if result:
-                all_matrix_data[matrix_name] = result
+            other_result = process_matrix_data(other_matrix_name, other_matrix_files, str(other_plot_dir))
+            if other_result:
+                all_matrix_data[other_matrix_name] = other_result
         else:
-            print(f"Warning: Skipping matrix '{matrix_name}'. Missing serial or OpenMP files.")
+            print(f"Warning: Skipping matrix '{other_matrix_name}'. Missing serial or OpenMP files.")
 
-    if all_matrix_data:
-        # Create comparison plots in the main plots folder
-        create_comparison_plots(all_matrix_data, str(plots_run_folder))
+    # Create comparison plots if we have multiple matrices
+    if len(all_matrix_data) > 1:
+        print(f"\nFound {len(all_matrix_data)} matrices total, creating comparison plots...")
 
-    print("\n=== Batch analysis complete ===")
+        # Create folder name from sorted matrix names
+        sorted_matrices = sorted(all_matrix_data.keys())
+
+        # Limit folder name length if too many matrices
+        if len(sorted_matrices) <= 4:
+            comparison_folder_name = "_vs_".join(sorted_matrices)
+        else:
+            # Use first 3 and last 1 with ellipsis
+            comparison_folder_name = "_vs_".join(sorted_matrices[:3]) + f"_and_{len(sorted_matrices)-3}_more"
+
+        # Create comparison plots directory
+        comparison_plots_dir = plots_run_folder / f"comparison_{comparison_folder_name}"
+        comparison_plots_dir.mkdir(parents=True, exist_ok=True)
+
+        print(f"Saving comparison plots to: {comparison_plots_dir}")
+        create_comparison_plots(all_matrix_data, str(comparison_plots_dir))
+    else:
+        print("\nOnly one matrix found, skipping comparison plots.")
+
+    print("\n=== Analysis complete ===")
 
 if __name__ == "__main__":
     main()
+
