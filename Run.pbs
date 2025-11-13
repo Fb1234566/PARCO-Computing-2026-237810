@@ -4,7 +4,7 @@
 #PBS -e ./PARCO_SpMV_Serial.e
 #PBS -q short_cpuQ
 #PBS -l walltime=06:00:00
-#PBS -l select=1:ncpus=96:mem=50gb
+#PBS -l select=1:ncpus=48:mem=25gb
 
 # Modules for C
 module load gcc91
