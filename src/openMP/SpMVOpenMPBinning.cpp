@@ -5,15 +5,11 @@
 #include <stdexcept>
 #include <cmath>
 
-// --- Constructors/Destructor are unchanged ---
-
 SpMVOpenMPBinning::SpMVOpenMPBinning(const string &n):SpVMInterface(n) {}
 
 SpMVOpenMPBinning::SpMVOpenMPBinning(const string &n, const utils::CSRMatrix &m, const vector<double> &v): SpVMInterface(n, m, v)  {}
 
 SpMVOpenMPBinning::~SpMVOpenMPBinning() {}
-
-// ---
 
 vector<double> SpMVOpenMPBinning::computeMultiplication(int numThreads) const {
     const vector<double> &values = matrix.val;
