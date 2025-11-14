@@ -31,7 +31,9 @@ void utils::ExecutionStatistics::runOpenMP(int iteration, const string &reportPa
     }
 
     // warm-up
-    model.runMultiplications(numThreads);
+    for (int i = 0; i < 5; i++) {
+        model.runMultiplications(numThreads);
+    }
     utils::PrintUtils::logToFile("Run warm-up");
     const int iters = 15;
     PrintUtils::logToFile("Start testing with " + std::to_string(iters) + "iterations");
@@ -80,7 +82,9 @@ void utils::ExecutionStatistics::runSerial(int iteration, const string &reportPa
     }
 
     // warm-up
-    model.runMultiplications();
+    for (int i = 0; i < 5; i++) {
+        model.runMultiplications();
+    }
     utils::PrintUtils::logToFile("Run warm-up");
     DataTable d;
     d.AddColumn("Iteration");
