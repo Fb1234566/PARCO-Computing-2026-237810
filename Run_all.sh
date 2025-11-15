@@ -20,7 +20,7 @@ gcc() {
 python3 -m venv .venv
 source ./.venv/bin/activate
 pip install --upgrade pip
-pip install numpy matplotlib pandas
+pip install numpy matplotlib pandas scipy
 
 # Create timestamp for this run
 RUN_TIMESTAMP=$(date +"%Y%m%d_%H%M%S")

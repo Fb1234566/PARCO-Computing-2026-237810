@@ -161,4 +161,6 @@ done
 source ./.venv/bin/activate
 # Analyze results for this matrix only
 python3 ./scripts/analyze_results.py "$OUTDIR" "$PLOTDIR"
+python3 ./scripts/make_paper_figures.py "$OUTDIR" "$PLOTDIR"
+
 deactivate
