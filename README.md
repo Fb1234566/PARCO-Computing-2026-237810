@@ -1,7 +1,6 @@
 # Sparse Matrix-Vector Multiplication (SpMV) - Introduction to Parallel Computing Project
 
-[![License](https://img.shields.io/badge/License-Academic-blue.svg)](LICENSE)
-[![C++](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)[![C++](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/)
 [![OpenMP](https://img.shields.io/badge/OpenMP-Enabled-green.svg)](https://www.openmp.org/)
 
 ## Table of Contents
