@@ -27,8 +27,8 @@ def process_matrix_data(matrix_name, files, output_dir):
             if key != 'serial':
                 variants[key] = pd.read_csv(path)
 
-        # --- 2. Process Data ---
-        avg_serial_time = df_serial['Execution_time'].mean()
+        # --- 2. Process Data (using 90th percentile) ---
+        avg_serial_time = df_serial['Execution_time'].quantile(0.9)
         std_serial_time = df_serial['Execution_time'].std()
 
         processed_data = {}
@@ -36,7 +36,7 @@ def process_matrix_data(matrix_name, files, output_dir):
 
         for variant_name, df in variants.items():
             grouped = df.groupby('Num_Threads')['Execution_time']
-            avg_time = grouped.mean().reset_index()
+            avg_time = grouped.quantile(0.9).reset_index()
             std_time = grouped.std().reset_index()
 
             avg_time['Execution_time_std'] = std_time['Execution_time']
