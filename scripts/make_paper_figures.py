@@ -39,7 +39,7 @@ def load_all_matrices(results_run_folder: Path, plots_run_folder: Path):
             if result:
                 all_matrix_data[matrix_name] = result
 
-    print(f"Loaded matrices for paper figures: {list(all_matrix_data.keys())}")
+    print(f"Loaded matrices for paper figures: {sorted(list(all_matrix_data.keys()))}")
     return all_matrix_data
 
 
@@ -125,10 +125,13 @@ def make_figure2_scaling_easy_hard(
     def plot_matrix(ax, matrix_name, title_short):
         data_dict = all_matrix_data[matrix_name]["data"]
 
+        max_threads = 0
         for idx, (v, label) in enumerate(zip(variants, variant_labels)):
             if v not in data_dict:
                 continue
             df = data_dict[v].sort_values("Num_Threads")
+            if not df.empty:
+                max_threads = max(max_threads, df["Num_Threads"].max())
             ax.plot(
                 df["Num_Threads"],
                 df["Speedup"],
@@ -138,13 +141,15 @@ def make_figure2_scaling_easy_hard(
                 label=label,
             )
 
-        ax.plot(
-            df["Num_Threads"],
-            df["Num_Threads"],
-            "k--",
-            linewidth=0.8,
-            label="Ideal",
-        )
+        if max_threads > 0:
+            ideal_threads = np.arange(1, max_threads + 1)
+            ax.plot(
+                ideal_threads,
+                ideal_threads,
+                "k--",
+                linewidth=0.8,
+                label="Ideal",
+            )
 
         ax.set_title(title_short, fontsize=9)
         ax.set_xlabel("Threads", fontsize=9)
@@ -187,10 +192,14 @@ def main():
         print(f"Error: results path `{results_run_folder}` is not a valid directory.")
         sys.exit(1)
 
+
+    plots_run_folder = plots_run_folder.parent
+
     paper_figures_dir = plots_run_folder / "paper_figures"
     paper_figures_dir.mkdir(parents=True, exist_ok=True)
-
+    results_run_folder = results_run_folder.parent
     all_matrix_data = load_all_matrices(results_run_folder, plots_run_folder)
+
     if not all_matrix_data:
         print("Error: no matrix data found.")
         sys.exit(1)
