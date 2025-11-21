@@ -129,8 +129,7 @@ pip install numpy matplotlib pandas scipy
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/PARCO-Computing-2026-237810.git
-cd PARCO-Computing-2026-237810
+git clone git@github.com:Fb1234566/PARCO-Computing-2026-237810.git
 ```
 
 ### 2. Verify Dependencies
@@ -371,29 +370,29 @@ The analysis scripts generate:
 
 ### Performance Overview
 
-| Matrix      | Rows    | Non-zeros  | Best Speedup | Best Strategy | Threads |
-|-------------|---------|------------|--------------|---------------|---------|
-| inline_1    | 503,712 | 18,660,027 |              |               | 32      |
-| nd24k       | 72,000  | 14,220,946 |              |               | 32      |
-| largebasis  | 504,855 | 4,617,816  |              |               | 32      |
-| Ga41As41H72 | 268,096 | 18,488,476 |              |               | 32      |
-| pre2        | 659,033 | 5,959,282  |              |               | 32      |
+### Speedup at 32 Threads (Compute-Bound -O0 Test)
+
+| Matrix       | Static | Dynamic | Guided | Binning |
+|--------------|-------:|--------:|-------:|--------:|
+| Ga41As41H72  | 16.56  | 2.13    | 21.99  | 22.45   |
+| inline_1     | 8.96   | 5.55    | 11.24  | 9.87    |
+| pre2         | 14.34  | 1.36    | 14.12  | 14.30   |
+| nd24k        | 19.60  | 16.70   | 24.31  | 23.77   |
+| largebasis   | 17.15  | 2.33    | 6.45   | 13.11   |
 
 ### Key Findings
 
-- **Binning** strategy most effective for matrices with irregular row distribution
-- **Guided** scheduling optimal for balanced workloads
-- Near-linear scaling up to 32 threads, diminishing returns beyond 48
-- Memory bandwidth becomes bottleneck at high thread counts
+- **Binning** strategy most effective in a compute-bound scenario
+- **Static** scheduling optimal for balanced workloads
 
 ### Sample Performance Plot
 
-![Speedup Comparison](docs/media/comparison_max_speedup.png)
+![Speedup Comparison](docs/media/comparison_speedup_32threads.png)
 
 ## Reproducibility
 
 ### Complete Reproduction Steps
-
+Note: to execute the memory-bound tests modify the makefile to compile with -O2 optimization. To execute the compute bound tests add  change the makefile to compile with -O0 optimization.
 1. **Clone and setup**:
    ```bash
    git clone <repository-url>

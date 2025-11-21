@@ -31,7 +31,8 @@ def process_matrix_data(matrix_name, files, plot_dir):
 
             # Assicurati che ci siano abbastanza dati per il calcolo del percentile.
             if len(df) > 0 and len(df.groupby('Num_Threads').head(1)) * 10 > len(df):
-                print(f"Warning for matrix {matrix_name}, variant {variant}: Some thread counts have less than 10 runs.")
+                print(
+                    f"Warning for matrix {matrix_name}, variant {variant}: Some thread counts have less than 10 runs.")
 
             # Calcola il 90° percentile del tempo di esecuzione per ogni numero di thread.
             percentile_times = df.groupby("Num_Threads")["Execution_time"].quantile(0.9)
@@ -113,7 +114,8 @@ def make_figure1_heatmap_32(all_matrix_data, output_dir: Path, target_threads: i
 
     fig, ax = plt.subplots(figsize=(3.5, 2.6), dpi=300)
 
-    vmax = max(target_threads, float(np.nanmax(speedup_matrix)) if speedup_matrix.size > 0 and np.any(~np.isnan(speedup_matrix)) else target_threads)
+    vmax = max(target_threads, float(np.nanmax(speedup_matrix)) if speedup_matrix.size > 0 and np.any(
+        ~np.isnan(speedup_matrix)) else target_threads)
     im = ax.imshow(speedup_matrix, cmap="RdYlGn", aspect="auto", vmin=0, vmax=vmax)
 
     ax.set_xticks(np.arange(len(variants)))
@@ -142,51 +144,69 @@ def make_figure1_heatmap_32(all_matrix_data, output_dir: Path, target_threads: i
     print(f"Saved Figure 1 (heatmap) to {fig_path}")
 
 
-def make_figure2_scaling_easy_hard(
+def make_figure2_scaling_imbalance_overhead(
         all_matrix_data,
         output_dir: Path,
-        easy_matrix_name: str,
-        hard_matrix_name: str,
+        hard_matrix_name: str = "Ga41As41H72",
+        overhead_matrix_name: str = "largebasis",
 ):
+    """
+    Genera due subplot:
+     (a) hard_matrix_name - Imbalance Test
+     (b) overhead_matrix_name - Overhead Test
+
+    Se mancano dati reali per una matrice o per una variante, viene sollevata una RuntimeError.
+    """
     variants = ["openmp_static", "openmp_binning", "openmp_guided", "openmp_dynamic"]
     variant_labels = ["Static", "Binning", "Guided", "Dynamic"]
     markers = ["o", "s", "^", "d"]
+    colors = ["#1f77b4", "#2ca02c", "#d62728", "#9467bd"]
 
-    if easy_matrix_name not in all_matrix_data:
-        print(f"Warning: easy matrix `{easy_matrix_name}` not found in {list(all_matrix_data.keys())}; skipping Figure 2.")
-        return
-    if hard_matrix_name not in all_matrix_data:
-        print(f"Warning: hard matrix `{hard_matrix_name}` not found in {list(all_matrix_data.keys())}; skipping Figure 2.")
-        return
+    # Controllo presenza matrici
+    for m in (hard_matrix_name, overhead_matrix_name):
+        if m not in all_matrix_data:
+            raise RuntimeError(f"Matrice `{m}` mancante in all_matrix_data; aborting (no synthetic data).")
 
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.6), dpi=300, sharey=True)
-    (ax_easy, ax_hard) = axes
+    (ax_hard, ax_overhead) = axes
 
-    def plot_matrix(ax, matrix_name, title_short):
-        data_dict = all_matrix_data[matrix_name]["data"]
+    def plot_side(ax, matrix_name, title_short):
+        data_dict = all_matrix_data[matrix_name].get("data", {})
+        # Verifica che tutte le varianti richieste esistano
+        missing = [v for v in variants if v not in data_dict]
+        if missing:
+            raise RuntimeError(
+                f"Mancano varianti per matrice `{matrix_name}`: {missing}; aborting (no synthetic data).")
 
-        max_threads = 0
+        max_threads = 1
         for idx, (v, label) in enumerate(zip(variants, variant_labels)):
-            if v in data_dict:
-                data = data_dict[v]
-                ax.plot(data["Num_Threads"], data["Speedup"], marker=markers[idx], markersize=4, linestyle='-', label=label)
-                if not data.empty:
-                    max_threads = max(max_threads, data["Num_Threads"].max())
+            df = data_dict[v]
+            if df.empty:
+                raise RuntimeError(f"DataFrame vuoto per variante `{v}` sulla matrice `{matrix_name}`; aborting.")
+            # Ordina per Num_Threads per sicurezza
+            ordered = df.sort_values("Num_Threads")
+            threads = ordered["Num_Threads"].values
+            speedup = ordered["Speedup"].values
+            ax.plot(threads, speedup, marker=markers[idx], markersize=4, linestyle='-', label=label, color=colors[idx])
+            max_threads = max(max_threads, int(np.nanmax(threads)))
 
-        if max_threads > 0:
+        if max_threads > 1:
             ax.plot([1, max_threads], [1, max_threads], 'k:', label='Ideal')
 
         ax.set_title(title_short, fontsize=9)
         ax.set_xlabel("Threads", fontsize=9)
+        ax.set_xscale('linear')
         ax.grid(True, linestyle="--", linewidth=0.4, alpha=0.7)
         ax.tick_params(axis="both", labelsize=8)
+        ax.set_xlim(1, max_threads)
+        ax.set_ylim(bottom=0.9)
 
-    plot_matrix(ax_easy, easy_matrix_name, f"(a) {easy_matrix_name}")
-    ax_easy.set_ylabel("Speedup (90th Percentile)", fontsize=9)
+    plot_side(ax_hard, hard_matrix_name, f"(a) {hard_matrix_name} (Imbalance Test)")
+    ax_hard.set_ylabel("Speedup (90th Percentile)", fontsize=9)
 
-    plot_matrix(ax_hard, hard_matrix_name, f"(b) {hard_matrix_name}")
+    plot_side(ax_overhead, overhead_matrix_name, f"(b) {overhead_matrix_name} (Overhead Test)")
 
-    handles, labels = ax_easy.get_legend_handles_labels()
+    handles, labels = ax_hard.get_legend_handles_labels()
     fig.legend(
         handles,
         labels,
@@ -199,11 +219,138 @@ def make_figure2_scaling_easy_hard(
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     output_dir.mkdir(parents=True, exist_ok=True)
-    fig_path = output_dir / "fig2_scaling_easy_vs_hard.png"
+    fig_path = output_dir / "fig2_scaling_imbalance_overhead.png"
     plt.savefig(fig_path, dpi=300)
     plt.close(fig)
     print(f"Saved Figure 2 (scaling easy vs hard) to {fig_path}")
 
+
+# python
+def _read_mtx_nnz(mtx_path: Path) -> int:
+    """
+    Legge un file Matrix Market `.mtx` e ritorna il campo NNZ
+    (terzo valore della prima riga non-commento).
+    """
+    with mtx_path.open("r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            s = line.strip()
+            if not s or s.startswith('%'):
+                continue
+            parts = s.split()
+            if len(parts) >= 3:
+                try:
+                    return int(parts[2])
+                except ValueError:
+                    return int(float(parts[2]))
+    raise ValueError(f"Unable to parse NNZ from {mtx_path}")
+
+
+def load_datasets_nnzs(datasets_folder: Path) -> dict:
+    """
+    Legge solo file Matrix Market `*.mtx` in `datasets_folder` e
+    restituisce dict {matrix_name: nnz} (intero). Solleva RuntimeError
+    se non trova file `.mtx` validi.
+    """
+    if not datasets_folder.exists() or not datasets_folder.is_dir():
+        raise RuntimeError(f"Dataset folder `{datasets_folder}` non valida.")
+
+    nnz_map = {}
+    for f in sorted(datasets_folder.glob("*.mtx")):
+        try:
+            nnz = _read_mtx_nnz(f)
+            nnz_map[f.stem] = int(nnz)
+        except Exception:
+            continue
+
+    if not nnz_map:
+        raise RuntimeError(f"Nessun file Matrix Market `.mtx` valido trovato in `{datasets_folder}`.")
+
+    return nnz_map
+
+
+def make_figure2_weak_scaling_memory_bound(
+        all_matrix_data,
+        output_dir: Path,
+        datasets_folder: Path,
+        target_threads: int = 32,
+):
+    """
+    Weak-scaling: X = NNZ (da `datasets_folder` .mtx), Y = Speedup a `target_threads`.
+    Usa solo dati reali presenti in `all_matrix_data` (solleva RuntimeError se mancanti).
+    """
+    # Carica mappa name -> nnz dai .mtx
+    nnz_map = load_datasets_nnzs(datasets_folder)
+
+    # mappa case-insensitive per trovare corrispondenze
+    lower_to_real = {k.lower(): k for k in nnz_map.keys()}
+
+    # Intersezione: solo matrici per cui abbiamo sia dati sperimentali che file .mtx
+    available = []
+    for m in all_matrix_data.keys():
+        if m in nnz_map or m.lower() in lower_to_real:
+            available.append(m)
+    if not available:
+        raise RuntimeError("Nessuna matrice presente sia in `all_matrix_data` che in `datasets` (.mtx).")
+
+    # Ordina matrici per NNZ crescente
+    def _nnz_for_name(m):
+        if m in nnz_map:
+            return nnz_map[m]
+        return nnz_map[lower_to_real[m.lower()]]
+
+    matrices = sorted(available, key=_nnz_for_name)
+
+    variants = ["openmp_static", "openmp_binning", "openmp_guided", "openmp_dynamic"]
+    variant_labels = ["Static", "Binning", "Guided", "Dynamic"]
+    markers = ["o", "s", "^", "d"]
+    colors = ["#1f77b4", "#2ca02c", "#d62728", "#9467bd"]
+
+    x_nnz = []
+    data_by_variant = {v: [] for v in variants}
+
+    for m in matrices:
+        # ricava nnz
+        if m in nnz_map:
+            nnz = nnz_map[m]
+        else:
+            nnz = nnz_map[lower_to_real[m.lower()]]
+        x_nnz.append(nnz / 1e6)  # milioni di NNZ
+
+        data_dict = all_matrix_data[m].get("data", {})
+        # Verifica presenza di tutte le varianti richieste
+        missing = [v for v in variants if v not in data_dict]
+        if missing:
+            raise RuntimeError(f"Variante/i {missing} mancante per matrice `{m}`; aborting (no synthetic data).")
+
+        for v in variants:
+            df_v = data_dict[v]
+            val = df_v[df_v["Num_Threads"] == target_threads]["Speedup"]
+            if val.empty:
+                raise RuntimeError(f"Speedup a {target_threads} threads non trovato per variante `{v}` su matrice `{m}`.")
+            data_by_variant[v].append(float(val.iloc[0]))
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(5.5, 3.2), dpi=300)
+    for idx, (v, label) in enumerate(zip(variants, variant_labels)):
+        y = np.array(data_by_variant[v])
+        ax.plot(x_nnz, y, marker=markers[idx], markersize=5, linestyle='-', label=label, color=colors[idx])
+
+    ax.set_xlabel("Problem size (NNZ, milioni)", fontsize=9)
+    ax.set_ylabel(f"Speedup (90th percentile) at {target_threads} threads", fontsize=9)
+    ax.set_title("Weak-Scaling Analysis (Memory-Bound Bottleneck)", fontsize=9)
+    ax.grid(True, linestyle="--", linewidth=0.4, alpha=0.7)
+    ax.tick_params(labelsize=8)
+    if x_nnz:
+        ax.set_xlim(min(x_nnz) * 0.95, max(x_nnz) * 1.05)
+    ax.set_ylim(bottom=0)
+    ax.legend(fontsize=8, frameon=False)
+    plt.tight_layout()
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fig_path = output_dir / "fig2_weak_scaling_memory_bound.png"
+    plt.savefig(fig_path, dpi=300)
+    plt.close(fig)
+    print(f"Saved Figure 2 (weak-scaling memory-bound) to {fig_path}")
 
 def main():
     if len(sys.argv) != 3:
@@ -217,7 +364,6 @@ def main():
         print(f"Error: results path `{results_run_folder}` is not a valid directory.")
         sys.exit(1)
 
-
     plots_run_folder = plots_run_folder.parent
     paper_figures_dir = plots_run_folder / "paper_figures"
     paper_figures_dir.mkdir(parents=True, exist_ok=True)
@@ -230,15 +376,23 @@ def main():
 
     make_figure1_heatmap_32(all_matrix_data, paper_figures_dir, target_threads=32)
 
-    make_figure2_scaling_easy_hard(
+    make_figure2_scaling_imbalance_overhead(
         all_matrix_data,
         paper_figures_dir,
-        easy_matrix_name="nd24k",
         hard_matrix_name="Ga41As41H72",
+        overhead_matrix_name="largebasis",
     )
 
-    print("=== Paper figures generation complete ===")
+    datasets_folder = Path("./datasets")
+    make_figure2_weak_scaling_memory_bound(
+        all_matrix_data,
+        paper_figures_dir,
+        datasets_folder=datasets_folder,
+        target_threads=32,
+    )
 
+
+print("=== Paper figures generation complete ===")
 
 if __name__ == "__main__":
     main()
