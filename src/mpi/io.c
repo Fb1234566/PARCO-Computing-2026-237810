@@ -2,12 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include "logger.h"
 
 void readMatrixCOO(const char* path, COOMatrix* m){
     FILE *f = fopen(path, "r");
-    if (!f) {perror("fopen"); return NULL;}
+    if (!f) {
+        LOG_ERROR("Unable to open file '%s'", path);
+        return;
+    }
 
-    //parse the comments for the dimensions of the matrix
+    // parse the comments for the dimensions of the matrix
     char *line = NULL;
     size_t len = 0;
     ssize_t nread;
@@ -21,11 +25,13 @@ void readMatrixCOO(const char* path, COOMatrix* m){
         if (*p == '%' || *p == '\0') continue;            // skip comments / empty lines
 
         if (sscanf(p, "%d %d %d", &m->rows, &m->cols, &m->nnz) == 3) {
-            printf("Found dimensionse: %dx%d %d nnz\n", m->rows, m->cols, m->nnz);
+            LOG_INFO("Dimensions found: %dx%d %d nnz", m->rows, m->cols, m->nnz);
             break;
         } else {
-            fprintf(stderr, "Malformed dimension line: %s\n", p);
-            break;
+            LOG_ERROR("Malformed dimensions line: %s", p);
+            free(line);
+            fclose(f);
+            return;
         }
     }
 
@@ -35,9 +41,10 @@ void readMatrixCOO(const char* path, COOMatrix* m){
 	cooList = malloc(m->nnz * sizeof(COOEntry));
 
 	int lineIdx = 0;
-    if (!m->row || !m->col || !m->val) {
-        perror("calloc");
+    if (!m->row || !m->col || !m->val || !cooList) {
+        LOG_ERROR("Memory allocation failed for COO");
         free(m->row); free(m->col); free(m->val);
+        free(cooList);
         free(line);
         fclose(f);
         return;
@@ -56,7 +63,10 @@ void readMatrixCOO(const char* path, COOMatrix* m){
 			e.val = val;
 			cooList[lineIdx] = e;
         } else {
-            fprintf(stderr, "Malformed line: %s\n", line);
+            LOG_ERROR("Malformed data line: %s", line);
+            free(cooList);
+            free(line);
+            fclose(f);
 			return;
         }
 		lineIdx++;
@@ -69,6 +79,10 @@ void readMatrixCOO(const char* path, COOMatrix* m){
 		m->col[i] = cooList[i].col;
 		m->val[i] = cooList[i].val;
 	}
+
+    free(cooList);
+    free(line);
+    fclose(f);
 }
 
 void COOToCSR(COOMatrix* in, CSRMatrix* out){
@@ -82,7 +96,7 @@ void COOToCSR(COOMatrix* in, CSRMatrix* out){
 	out->col = calloc(out->nnz, sizeof(int));
 	out->val = calloc(out->nnz, sizeof(double));
 	if (!out->rowPtr || !out->col || !out->val) {
-    	perror("calloc CSR");
+    	LOG_ERROR("Memory allocation failed for CSR");
     	free(out->rowPtr); free(out->col); free(out->val);
     	return;
 	}
@@ -109,15 +123,15 @@ void COOToCSR(COOMatrix* in, CSRMatrix* out){
 
 void printCOO(const COOMatrix* m){
     if (!m) return;
-    printf("COO Matrix: %dx%d, nnz=%d\n", m->rows, m->cols, m->nnz);
+    LOG_INFO("COO Matrix: %dx%d, nnz=%d", m->rows, m->cols, m->nnz);
     for (int i = 0; i < m->nnz; ++i) {
-        printf("%d %d %g\n", m->row[i] , m->col[i] , m->val[i]);
+        LOG_DEBUG("%d %d %g", m->row[i] , m->col[i] , m->val[i]);
     }
 }
 
 void printCSR(const CSRMatrix* m){
     if (!m) return;
-    printf("CSR Matrix: %dx%d, nnz=%d\n", m->rows, m->cols, m->nnz);
+    LOG_INFO("CSR Matrix: %dx%d, nnz=%d", m->rows, m->cols, m->nnz);
     if (!m->rowPtr || !m->col || !m->val) return;
 
     for (int r = 0; r < m->rows; ++r) {
@@ -128,7 +142,7 @@ void printCSR(const CSRMatrix* m){
         if (start >= end) continue;
 
         for (int idx = start; idx < end; ++idx) {
-            printf("%d %d %g\n", r, m->col[idx], m->val[idx]);
+            LOG_DEBUG("%d %d %g", r, m->col[idx], m->val[idx]);
         }
     }
 }
@@ -146,11 +160,16 @@ int COOEntryCompartor(const void* a, const void* b){
 }
 
 int main() {
+	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
+		fprintf(stderr, "Unable to initialize logger\n");
+		return 1;
+	}
 	COOMatrix m;
     readMatrixCOO("datasets/prova", &m);
 	printCOO(&m);
 	CSRMatrix c;
 	COOToCSR(&m,&c);
 	printCSR(& c);
+    logger_close();
     return 0;
 }
