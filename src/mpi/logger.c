@@ -4,6 +4,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 static FILE* s_fp = NULL;
 static log_level_t s_level = LOG_LEVEL_INFO;
@@ -25,8 +28,8 @@ int logger_init(const char* path, log_level_t level) {
     s_fp = fopen(path, "a");
     if (!s_fp) { pthread_mutex_unlock(&s_mtx); return -1; }
     s_level = level;
-    // Line buffering; alcuni libc potrebbero degradare a full buffering sui file.
-    setvbuf(s_fp, NULL, _IOLBF, 0);
+    // Disable buffering to update the file immediately during execution.
+    setvbuf(s_fp, NULL, _IONBF, 0);
     pthread_mutex_unlock(&s_mtx);
     return 0;
 }
@@ -64,13 +67,15 @@ void logger_log(log_level_t level, const char* file, int line, const char* fmt, 
     va_end(ap);
 
     fputc('\n', s_fp);
+    // Flush libc buffers and also fsync underlying file descriptor to ensure persistence.
     fflush(s_fp);
+    int fd = fileno(s_fp);
+    if (fd >= 0) { fsync(fd); }
     pthread_mutex_unlock(&s_mtx);
 }
 
 void logger_close(void) {
     pthread_mutex_lock(&s_mtx);
-    if (s_fp) { fflush(s_fp); fclose(s_fp); s_fp = NULL; }
+    if (s_fp) { fflush(s_fp); int fd = fileno(s_fp); if (fd >= 0) fsync(fd); fclose(s_fp); s_fp = NULL; }
     pthread_mutex_unlock(&s_mtx);
 }
-

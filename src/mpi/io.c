@@ -5,6 +5,7 @@
 #include "logger.h"
 
 void readMatrixCOO(const char* path, COOMatrix* m){
+    LOG_INFO("Start reading COO matrix from '%s'", path);
     FILE *f = fopen(path, "r");
     if (!f) {
         LOG_ERROR("Unable to open file '%s'", path);
@@ -25,7 +26,7 @@ void readMatrixCOO(const char* path, COOMatrix* m){
         if (*p == '%' || *p == '\0') continue;            // skip comments / empty lines
 
         if (sscanf(p, "%d %d %d", &m->rows, &m->cols, &m->nnz) == 3) {
-            LOG_INFO("Dimensions found: %dx%d %d nnz", m->rows, m->cols, m->nnz);
+            LOG_INFO("Dimensions: %dx%d, nnz=%d", m->rows, m->cols, m->nnz);
             break;
         } else {
             LOG_ERROR("Malformed dimensions line: %s", p);
@@ -83,9 +84,11 @@ void readMatrixCOO(const char* path, COOMatrix* m){
     free(cooList);
     free(line);
     fclose(f);
+    LOG_INFO("Finished reading COO matrix from '%s'", path);
 }
 
 void COOToCSR(COOMatrix* in, CSRMatrix* out){
+    LOG_INFO("Start converting COO to CSR");
 	int currRow = -1;
 	int idx=0;
 	int i = 0;
@@ -119,19 +122,20 @@ void COOToCSR(COOMatrix* in, CSRMatrix* out){
 	for (; idx <= out->rows; ++idx) {
 		out->rowPtr[idx] = out->nnz;
 	}
+    LOG_INFO("Finished converting COO to CSR");
 }
 
 void printCOO(const COOMatrix* m){
+    // Removed noisy logs inside print functions
     if (!m) return;
-    LOG_INFO("COO Matrix: %dx%d, nnz=%d", m->rows, m->cols, m->nnz);
     for (int i = 0; i < m->nnz; ++i) {
-        LOG_DEBUG("%d %d %g", m->row[i] , m->col[i] , m->val[i]);
+        // printing suppressed; keep function available if needed for debug
     }
 }
 
 void printCSR(const CSRMatrix* m){
+    // Removed noisy logs inside print functions
     if (!m) return;
-    LOG_INFO("CSR Matrix: %dx%d, nnz=%d", m->rows, m->cols, m->nnz);
     if (!m->rowPtr || !m->col || !m->val) return;
 
     for (int r = 0; r < m->rows; ++r) {
@@ -142,7 +146,7 @@ void printCSR(const CSRMatrix* m){
         if (start >= end) continue;
 
         for (int idx = start; idx < end; ++idx) {
-            LOG_DEBUG("%d %d %g", r, m->col[idx], m->val[idx]);
+            // printing suppressed; keep function available if needed for debug
         }
     }
 }
@@ -160,16 +164,23 @@ int COOEntryCompartor(const void* a, const void* b){
 }
 
 int main() {
+    LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
 		fprintf(stderr, "Unable to initialize logger\n");
 		return 1;
 	}
+
+    LOG_INFO("Step: Read matrix (COO)");
 	COOMatrix m;
-    readMatrixCOO("datasets/prova", &m);
-	printCOO(&m);
+    readMatrixCOO("datasets/inline_1.mtx", &m);
+    LOG_INFO("Step completed: Read matrix (COO)");
+
+    LOG_INFO("Step: Convert to CSR");
 	CSRMatrix c;
 	COOToCSR(&m,&c);
-	printCSR(& c);
+    LOG_INFO("Step completed: Convert to CSR");
+
     logger_close();
+    LOG_INFO("=== Program end ===");
     return 0;
 }
