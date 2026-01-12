@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
 #include "logger.h"
+#include <stdio.h>
 
 void readMatrixCOO(const char* path, COOMatrix* m){
     LOG_INFO("Start reading COO matrix from '%s'", path);
@@ -126,15 +128,13 @@ void COOToCSR(COOMatrix* in, CSRMatrix* out){
 }
 
 void printCOO(const COOMatrix* m){
-    // Removed noisy logs inside print functions
     if (!m) return;
     for (int i = 0; i < m->nnz; ++i) {
-        // printing suppressed; keep function available if needed for debug
+        printf("COO [%d]: row=%d col=%d val=%f\n", i, m->row[i], m->col[i], m->val[i]);
     }
 }
 
 void printCSR(const CSRMatrix* m){
-    // Removed noisy logs inside print functions
     if (!m) return;
     if (!m->rowPtr || !m->col || !m->val) return;
 
@@ -146,10 +146,12 @@ void printCSR(const CSRMatrix* m){
         if (start >= end) continue;
 
         for (int idx = start; idx < end; ++idx) {
-            // printing suppressed; keep function available if needed for debug
+            printf("CSR row=%d idx=%d: col=%d val=%f\n", r, idx, m->col[idx], m->val[idx]);
         }
     }
 }
+
+
 
 int COOEntryCompartor(const void* a, const void* b){
 	const COOEntry* x = (const COOEntry*)a;
@@ -161,6 +163,103 @@ int COOEntryCompartor(const void* a, const void* b){
 	if (x->col > y->col) return 1;
 	return 0;
 
+}
+
+void randomInitCOO(CSRMatrix* m, int rows, int cols, int nRanks, int nnz){
+    LOG_INFO("Start randomInitCOO: rows=%d cols=%d nRanks=%d requested_nnz=%d", rows, cols, nRanks, nnz);
+
+    if (nnz <= 0 || rows <= 0 || cols <= 0 || nRanks <= 0) {
+        LOG_ERROR("Invalid parameters to randomInitCOO");
+        return;
+    }
+
+    COOEntry* elements = malloc(sizeof(COOEntry) * (size_t)nnz);
+    if (!elements) {
+        LOG_ERROR("Memory allocation failed for elements (nnz=%d)", nnz);
+        return;
+    }
+    LOG_INFO("Allocated elements buffer for %d entries", nnz);
+
+    int nnzPerRank = nnz / nRanks;
+    int currRank;
+    int rowsPerRank = rows / nRanks;
+    int currNumOfElems = 0;
+
+    for (currRank = 0; currRank < nRanks; currRank++) {
+        int i;
+        for (i = 0; i < nnzPerRank; i++) {
+            COOEntry elem;
+            do {
+                elem.row = generateRandInt(currRank * rowsPerRank, currRank * rowsPerRank + rowsPerRank);
+                elem.col = generateRandInt(0, cols - 1);
+                elem.val = generateRandDouble(0.0, 10000.0);
+            } while (checkIfValueIsAlreadyPresent(elements, &elem, currNumOfElems));
+            elements[currNumOfElems] = elem;
+            currNumOfElems++;
+        }
+    }
+
+    LOG_INFO("Generated %d unique COO entries (before sort)", currNumOfElems);
+
+    qsort(elements, (size_t)currNumOfElems, sizeof(COOEntry), COOEntryCompartor);
+    LOG_INFO("Sorted %d COO entries", currNumOfElems);
+
+    COOMatrix temp;
+    temp.rows = rows;
+    temp.cols = cols;
+    temp.nnz = currNumOfElems;
+    temp.row = calloc((size_t)temp.nnz, sizeof(int));
+    temp.col = calloc((size_t)temp.nnz, sizeof(int));
+    temp.val = calloc((size_t)temp.nnz, sizeof(double));
+    if (!temp.row || !temp.col || !temp.val) {
+        LOG_ERROR("Memory allocation failed for temporary COOMatrix (nnz=%d)", temp.nnz);
+        free(elements);
+        free(temp.row); free(temp.col); free(temp.val);
+        return;
+    }
+    LOG_INFO("Allocated temporary COO arrays for %d entries", temp.nnz);
+
+    for (int i = 0; i < temp.nnz; i++) {
+        temp.row[i] = elements[i].row;
+        temp.col[i] = elements[i].col;
+        temp.val[i] = elements[i].val;
+    }
+
+    free(elements);
+    LOG_INFO("Converted generated entries into temporary COOMatrix, calling COOToCSR");
+
+    COOToCSR(&temp, m);
+    LOG_INFO("COOToCSR completed");
+
+    free(temp.row);
+    free(temp.col);
+    free(temp.val);
+    LOG_INFO("Finished randomInitCOO");
+}
+
+int generateRandInt(int min, int max){
+    if (max <= min) return min;
+    return min + (rand() % (max - min + 1));
+}
+
+bool checkIfValueIsAlreadyPresent(COOEntry* c, COOEntry* e, int n){
+    int i;
+    for (i = 0; i < n; i++) {
+        if (c[i].row == e->row && c[i].col == e->col) {
+            return true;
+        }
+    }
+    return false;
+}
+
+double generateRandDouble(double lower_bound, double upper_bound){
+    if (upper_bound <= lower_bound) return lower_bound;
+    return lower_bound + ((double)rand() / (double)RAND_MAX) * (upper_bound - lower_bound);
+}
+
+void setRandSeed(){
+    srand((unsigned)time(NULL));
+    LOG_INFO("Random seed set with time(NULL)");
 }
 
 int main() {
@@ -179,6 +278,10 @@ int main() {
 	CSRMatrix c;
 	COOToCSR(&m,&c);
     LOG_INFO("Step completed: Convert to CSR");
+
+	CSRMatrix c1;
+	randomInitCOO(&c1, 10, 10, 5, 50);
+	printCSR(&c1);
 
     logger_close();
     LOG_INFO("=== Program end ===");

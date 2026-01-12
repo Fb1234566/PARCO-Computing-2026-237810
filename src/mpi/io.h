@@ -5,6 +5,8 @@
 #ifndef DELIVERABLE1_2025_2026_IO_H
 #define DELIVERABLE1_2025_2026_IO_H
 
+#include <stdbool.h>
+
 typedef struct COOEntry{
 	int row, col;
 	double val;
@@ -36,5 +38,14 @@ void COOToCSR(COOMatrix* in, CSRMatrix* out);
 
 int COOEntryCompartor(const void* a, const void* b);
 
+void randomInitCOO(CSRMatrix* m, int rows, int cols, int nRanks, int nnz);
+
+int generateRandInt(int min, int max);
+
+double generateRandDouble();
+
+void setRandSeed();
+
+bool checkIfValueIsAlreadyPresent(COOEntry* c, COOEntry* e, int n);
 
 #endif //DELIVERABLE1_2025_2026_IO_H
