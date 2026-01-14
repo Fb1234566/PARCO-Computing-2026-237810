@@ -1,0 +1,54 @@
+#!/bin/bash
+# Job name
+#PBS -N name
+# Output files
+#PBS -o ./name.o
+#PBS -e ./name.e
+# Queue name
+#PBS -q short_cpuQ
+# Set the maximum wall time
+#PBS -l walltime=0:02:00
+# Number of nodes, cpus, mpi processors and amount of memory
+#PBS -l select=1:ncpus=4:mpiprocs=4:mem=1mb
+
+# Modules for python and MPI
+module load gcc91
+module load mpich-3.2.1--gcc-9.1.0
+
+g++() {
+    g++-9.1.0 "$@"
+}
+
+g++ --version
+
+gcc() {
+    gcc-9.1.0 "$@"
+}
+gcc --version
+
+
+# Print the name of the file that contains the list of the nodes assigned to the job and list all the nodes
+NODES=$(cat $PBS_NODEFILE)
+echo The running nodes are $NODES
+
+# Get the list of unique nodes assigned to the job
+NODES=$(sort -u $PBS_NODEFILE)
+echo The running nodes are $NODES
+
+# Loop through each node and get architecture information
+for NODE in $NODES; do
+    echo "Node: $NODE"
+    ssh $NODE "lscpu"
+done
+
+# Select the working directory
+cd /home/username/dir
+
+# the code should be previously compiled
+mpicc src/mpi/spvm_mpi.c -o code.out
+#mpicxx code_mpi.cpp -o code.out
+
+# Run the code
+mpirun -np 4 ./code.out
+# If you set the number of mpi processors, here it is enough to type
+# mpirun ./code.out
