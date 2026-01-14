@@ -1,6 +1,6 @@
 # Compiler
 CXX := g++-9.1.0
-MPI_CXX := gcc
+MPICC := mpicc
 
 
 # Base flags
