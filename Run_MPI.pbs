@@ -42,10 +42,10 @@ for NODE in $NODES; do
 done
 
 # Select the working directory
-cd /home/username/dir
+cd /home/filippo.benedetti-2/PARCO-Computing-2026-237810
 
 # the code should be previously compiled
-mpicc src/mpi/spvm_mpi.c -o code.out
+mpicc ./src/mpi/spvm_mpi.c -o code.out
 #mpicxx code_mpi.cpp -o code.out
 
 # Run the code
