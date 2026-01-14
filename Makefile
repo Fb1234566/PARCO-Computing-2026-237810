@@ -1,5 +1,5 @@
 # Compiler
-CXX := g++-9.1.0
+CXX := g++
 MPICC := mpicc
 
 
@@ -11,7 +11,7 @@ CXXFLAGS_MAIN    := $(BASE_CXXFLAGS)
 CXXFLAGS_GENERIC := $(BASE_CXXFLAGS)
 CXXFLAGS_SERIAL  := $(BASE_CXXFLAGS)
 CXXFLAGS_OMP     := $(BASE_CXXFLAGS) -fopenmp
-CXXFLAGS_MPI     := -Wall -Wextra -Wpedantic
+CXXFLAGS_MPI     :=
 
 # Linker flags
 LDFLAGS := -fopenmp
@@ -114,7 +114,7 @@ mpi: $(TARGET_MPI)
 
 $(TARGET_MPI): $(OBJS_MPI)
 	@mkdir -p $(BIN_DIR)
-	$(MPI_CXX) $(OBJS_MPI) -o $@ -g
+	$(MPICC) $(OBJS_MPI) -o $@ -g
 
 # Specific compilation rules
 $(OBJ_DIR)/main.o: main.cpp
