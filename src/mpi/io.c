@@ -254,10 +254,13 @@ void setRandSeed(){
 }
 
 void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
+	LOG_INFO("splitCOOMatrix: start rows=%d cols=%d nnz=%d P=%d", inMatrix->rows, inMatrix->cols, inMatrix->nnz, P);
+
 	int i;
 	int owner;
 	int* ownerIdx = calloc(P, sizeof(int));
 	int* valuesPerRow = calloc(P, sizeof(int));
+	LOG_INFO("splitCOOMatrix: allocated ownerIdx=%p valuesPerRow=%p for P=%d", (void*)ownerIdx, (void*)valuesPerRow, P);
 
 	for(i=0; i<inMatrix->nnz; i++) {
 		owner = inMatrix->row[i]%P;
@@ -265,7 +268,7 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
 	}
 
 	for(i=0; i<P; i++){
-
+		LOG_INFO("splitCOOMatrix: owner %d will receive %d entries", i, valuesPerRow[i]);
 	}
 
 	// Initialize array of matrices
@@ -276,13 +279,14 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
 		arrayMatrices[i].row = calloc(valuesPerRow[i], sizeof(int));
 		arrayMatrices[i].col = calloc(valuesPerRow[i], sizeof(int));
 		arrayMatrices[i].val = calloc(valuesPerRow[i], sizeof(double));
-
+		LOG_INFO("splitCOOMatrix: owner %d allocated row=%p col=%p val=%p (nnz=%d)", i, (void*)arrayMatrices[i].row, (void*)arrayMatrices[i].col, (void*)arrayMatrices[i].val, valuesPerRow[i]);
 	}
 
 	//slice the matrix
 	for (i = 0; i < inMatrix->nnz; i++){
 		owner = inMatrix->row[i]%P;
 		int* currIdx = &ownerIdx[owner];
+		LOG_INFO("splitCOOMatrix: assigning global_idx=%d to owner=%d local_idx=%d row=%d col=%d val=%f", i, owner, *currIdx, inMatrix->row[i], inMatrix->col[i], inMatrix->val[i]);
 		printf("%d: %d, %d %f\n", owner, inMatrix->row[i], inMatrix->col[i], inMatrix->val[i]);
 		arrayMatrices[owner].row[*currIdx] = inMatrix->row[i];
 		arrayMatrices[owner].col[*currIdx] = inMatrix->col[i];
@@ -290,6 +294,12 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
 
 		(*currIdx)++;
 	}
+
+	for (i = 0; i < P; i++){
+		LOG_INFO("splitCOOMatrix: owner %d received %d entries (expected %d)", i, ownerIdx[i], valuesPerRow[i]);
+	}
+
+	LOG_INFO("splitCOOMatrix: end");
 }
 
 
