@@ -38,7 +38,7 @@ void COOToCSR(COOMatrix* in, CSRMatrix* out);
 
 int COOEntryCompartor(const void* a, const void* b);
 
-void randomInitCOO(CSRMatrix* m, int rows, int cols, int nRanks, int nnz);
+void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz);
 
 int generateRandInt(int min, int max);
 

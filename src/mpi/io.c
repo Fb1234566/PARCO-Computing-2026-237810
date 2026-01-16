@@ -218,7 +218,7 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
     }
     LOG_INFO("Allocated COO arrays for %d entries", m->nnz);
 
-    for (int i = 0; i < temp.nnz; i++) {
+    for (int i = 0; i < m->nnz; i++) {
         m->row[i] = elements[i].row;
         m->col[i] = elements[i].col;
         m->val[i] = elements[i].val;
@@ -320,7 +320,7 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
 
     LOG_INFO("Step: Read matrix (COO)");
 	COOMatrix m;
-    readMatrixCOO("datasets/inline_1.mtx", &m);
+    readMatrixCOO("datasets/prova", &m);
 	COOMatrix* arr = malloc(sizeof(CSRMatrix)*4);
     LOG_INFO("Step completed: Read matrix (COO)");
 	splitCOOMatrix(&m, arr, 4);
@@ -346,7 +346,7 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
 
 	CSRMatrix c1;
 	randomInitCOO(&c1, 10, 10, 5, 50);
-	printCSR(&c1);
+	printCOO(&c1);
 
     logger_close();
     LOG_INFO("=== Program end ===");
