@@ -112,9 +112,9 @@ $(TARGET_OMP_GUIDED): $(OBJS_OMP_GUIDED_ONLY) $(OBJS_GENERIC)
 
 mpi: $(TARGET_MPI)
 
-$(TARGET_MPI): $(OBJS_MPI)
+$(TARGET_MPI): $(SRCS_MPI)
 	@mkdir -p $(BIN_DIR)
-	$(MPICC) $(OBJS_MPI) -o $@ -g
+	$(MPICC) $(SRCS_MPI) -o $@ -g
 
 # Specific compilation rules
 $(OBJ_DIR)/main.o: main.cpp
@@ -139,7 +139,7 @@ $(OBJ_DIR)/src/openMP/%.o: src/openMP/%.cpp
 
 $(OBJ_DIR)/src/mpi/%.o: src/mpi/%.c
 	@mkdir -p $(dir $@)
-	$(MPI_CXX) $(CXXFLAGS_MPI) -MMD -MP -c $< -o $@
+	$(MPICC) $(CXXFLAGS_MPI) -MMD -MP -c $< -o $@
 
 # Run
 run: $(TARGET)
