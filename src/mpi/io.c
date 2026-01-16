@@ -262,6 +262,64 @@ void setRandSeed(){
     LOG_INFO("Random seed set with time(NULL)");
 }
 
+void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
+	int i;
+	int owner;
+	int* ownerIdx = calloc(P, sizeof(int));
+	int* valuesPerRow = calloc(P, sizeof(int));
+
+	for(i=0; i<inMatrix->nnz; i++) {
+		owner = inMatrix->row[i]%P;
+		valuesPerRow[owner]++;
+	}
+
+	for(i=0; i<P; i++){
+
+	}
+
+	// Initialize array of matrices
+	for (i = 0; i < P; i++){
+		arrayMatrices[i].rows = inMatrix->rows;
+		arrayMatrices[i].cols = inMatrix->cols;
+		arrayMatrices[i].nnz = valuesPerRow[i];
+		arrayMatrices[i].row = calloc(valuesPerRow[i], sizeof(int));
+		arrayMatrices[i].col = calloc(valuesPerRow[i], sizeof(int));
+		arrayMatrices[i].val = calloc(valuesPerRow[i], sizeof(double));
+
+	}
+
+	//slice the matrix
+	for (i = 0; i < inMatrix->nnz; i++){
+		owner = inMatrix->row[i]%P;
+		int* currIdx = &ownerIdx[owner];
+		printf("%d: %d, %d %f\n", owner, inMatrix->row[i], inMatrix->col[i], inMatrix->val[i]);
+		arrayMatrices[owner].row[*currIdx] = inMatrix->row[i];
+		arrayMatrices[owner].col[*currIdx] = inMatrix->col[i];
+		arrayMatrices[owner].val[*currIdx] = inMatrix->val[i];
+
+		(*currIdx)++;
+	}
+}
+
+
+
+void initCOO(COOMatrix* m, const int rows, const int cols, const int nnz){
+	m->rows = rows;
+	m->cols = cols;
+	m->nnz = nnz;
+	m->row = calloc(nnz, sizeof(int));
+	m->col = calloc(nnz, sizeof(int));
+	m->val = calloc(nnz, sizeof(double));
+}
+
+void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
+	int i;
+	for(i = 0; i<P; i++){
+		COOToCSR(&in[i], &out[i]);
+	}
+}
+
+
 /*int main() {
     LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
@@ -272,7 +330,23 @@ void setRandSeed(){
     LOG_INFO("Step: Read matrix (COO)");
 	COOMatrix m;
     readMatrixCOO("datasets/inline_1.mtx", &m);
+	COOMatrix* arr = malloc(sizeof(CSRMatrix)*4);
     LOG_INFO("Step completed: Read matrix (COO)");
+	splitCOOMatrix(&m, arr, 4);
+
+	int i;
+	for (i=0; i<4; i++){
+		printf("======COOMatrix %d=======\n", i);
+		printCOO(&arr[i]);
+	}
+	CSRMatrix* res = malloc(sizeof(CSRMatrix)*4);
+	COOListToCSR(arr, res, 4);
+	for (i=0; i<4; i++){
+		printf("======CSRMatrix %d=======\n", i);
+		printCSR(&res[i]);
+	}
+
+
 
     LOG_INFO("Step: Convert to CSR");
 	CSRMatrix c;

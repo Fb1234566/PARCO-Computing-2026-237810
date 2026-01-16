@@ -18,7 +18,7 @@ typedef struct COOMatrix{
     int nnz;
     int *row;
     int *col;
-    float *val;
+    double *val;
 } COOMatrix;
 
 typedef struct CSRMatrix{
@@ -27,7 +27,7 @@ typedef struct CSRMatrix{
     int nnz;
     int *rowPtr;
     int *col;
-    float *val;
+    double *val;
 } CSRMatrix;
 
 void readMatrixCOO(const char* path, COOMatrix* m);
@@ -48,4 +48,9 @@ void setRandSeed();
 
 bool checkIfValueIsAlreadyPresent(COOEntry* c, COOEntry* e, int n);
 
+void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, int P);
+
+void initCOO(COOMatrix* m, int rows, int cols, int nnz);
+
+void COOListToCSR(COOMatrix* in, CSRMatrix* out, int P);
 #endif //DELIVERABLE1_2025_2026_IO_H
