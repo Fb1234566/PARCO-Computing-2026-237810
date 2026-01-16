@@ -286,4 +286,4 @@ void setRandSeed(){
     logger_close();
     LOG_INFO("=== Program end ===");
     return 0;
-}+/
+}*/
