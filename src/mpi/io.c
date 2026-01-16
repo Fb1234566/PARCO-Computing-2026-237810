@@ -262,7 +262,7 @@ void setRandSeed(){
     LOG_INFO("Random seed set with time(NULL)");
 }
 
-int main() {
+/*int main() {
     LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
 		fprintf(stderr, "Unable to initialize logger\n");
@@ -286,4 +286,4 @@ int main() {
     logger_close();
     LOG_INFO("=== Program end ===");
     return 0;
-}
+}+/
