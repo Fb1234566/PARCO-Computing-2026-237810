@@ -165,7 +165,7 @@ int COOEntryCompartor(const void* a, const void* b){
 
 }
 
-void randomInitCOO(CSRMatrix* m, int rows, int cols, int nRanks, int nnz){
+void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
     LOG_INFO("Start randomInitCOO: rows=%d cols=%d nRanks=%d requested_nnz=%d", rows, cols, nRanks, nnz);
 
     if (nnz <= 0 || rows <= 0 || cols <= 0 || nRanks <= 0) {
@@ -204,37 +204,28 @@ void randomInitCOO(CSRMatrix* m, int rows, int cols, int nRanks, int nnz){
     qsort(elements, (size_t)currNumOfElems, sizeof(COOEntry), COOEntryCompartor);
     LOG_INFO("Sorted %d COO entries", currNumOfElems);
 
-    COOMatrix temp;
-    temp.rows = rows;
-    temp.cols = cols;
-    temp.nnz = currNumOfElems;
-    temp.row = calloc((size_t)temp.nnz, sizeof(int));
-    temp.col = calloc((size_t)temp.nnz, sizeof(int));
-    temp.val = calloc((size_t)temp.nnz, sizeof(double));
-    if (!temp.row || !temp.col || !temp.val) {
-        LOG_ERROR("Memory allocation failed for temporary COOMatrix (nnz=%d)", temp.nnz);
+    m->rows = rows;
+    m->cols = cols;
+    m->nnz = currNumOfElems;
+    m->row = calloc((size_t)m->nnz, sizeof(int));
+    m->col = calloc((size_t)m->nnz, sizeof(int));
+    m->val = calloc((size_t)m->nnz, sizeof(double));
+    if (!m->row || !m->col || !m->val) {
+        LOG_ERROR("Memory allocation failed for temporary COOMatrix (nnz=%d)", m->nnz);
         free(elements);
-        free(temp.row); free(temp.col); free(temp.val);
+        free(m->row); free(m->col); free(m->val);
         return;
     }
-    LOG_INFO("Allocated temporary COO arrays for %d entries", temp.nnz);
+    LOG_INFO("Allocated COO arrays for %d entries", m->nnz);
 
     for (int i = 0; i < temp.nnz; i++) {
-        temp.row[i] = elements[i].row;
-        temp.col[i] = elements[i].col;
-        temp.val[i] = elements[i].val;
+        m->row[i] = elements[i].row;
+        m->col[i] = elements[i].col;
+        m->val[i] = elements[i].val;
     }
 
     free(elements);
-    LOG_INFO("Converted generated entries into temporary COOMatrix, calling COOToCSR");
-
-    COOToCSR(&temp, m);
-    LOG_INFO("COOToCSR completed");
-
-    free(temp.row);
-    free(temp.col);
-    free(temp.val);
-    LOG_INFO("Finished randomInitCOO");
+    LOG_INFO("Converted generated entries into COOMatrix");
 }
 
 int generateRandInt(int min, int max){
