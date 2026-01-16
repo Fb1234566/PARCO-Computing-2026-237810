@@ -278,16 +278,12 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
 		arrayMatrices[i].nnz = valuesPerRow[i];
 		arrayMatrices[i].row = calloc(valuesPerRow[i], sizeof(int));
 		arrayMatrices[i].col = calloc(valuesPerRow[i], sizeof(int));
-		arrayMatrices[i].val = calloc(valuesPerRow[i], sizeof(double));
-		LOG_INFO("splitCOOMatrix: owner %d allocated row=%p col=%p val=%p (nnz=%d)", i, (void*)arrayMatrices[i].row, (void*)arrayMatrices[i].col, (void*)arrayMatrices[i].val, valuesPerRow[i]);
-	}
+		arrayMatrices[i].val = calloc(valuesPerRow[i], sizeof(double));	}
 
 	//slice the matrix
 	for (i = 0; i < inMatrix->nnz; i++){
 		owner = inMatrix->row[i]%P;
 		int* currIdx = &ownerIdx[owner];
-		LOG_INFO("splitCOOMatrix: assigning global_idx=%d to owner=%d local_idx=%d row=%d col=%d val=%f", i, owner, *currIdx, inMatrix->row[i], inMatrix->col[i], inMatrix->val[i]);
-		printf("%d: %d, %d %f\n", owner, inMatrix->row[i], inMatrix->col[i], inMatrix->val[i]);
 		arrayMatrices[owner].row[*currIdx] = inMatrix->row[i];
 		arrayMatrices[owner].col[*currIdx] = inMatrix->col[i];
 		arrayMatrices[owner].val[*currIdx] = inMatrix->val[i];
