@@ -71,8 +71,8 @@ int main(int argc, char **argv) {
 		randomInitCOO(&c1, 10, 10, world_size, world_size*2);
 	    //readMatrixCOO("datasets/inline_1.mtx", &c1);
 		bufCol = calloc(c1.nnz, sizeof(int));    
-		bufPtr = calloc(c1.rows+1, sizeof(double));
-	    bufVal = calloc(c1.nnz, sizeof(int));
+		bufPtr = calloc(c1.rows+1, sizeof(int));
+	    bufVal = calloc(c1.nnz, sizeof(double));
 	    splitCOOMatrix(&c1, cooMatrices, world_size);
 
 		// Fill the headers in order to allow allocation of arrays
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 	MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
     int j;
 	for (j=0; j<m.nnz; j++){
-		printf("rank %d: col:%d, val:%d\n", world_rank, m.col[j], m.val[j]);
+		printf("rank %d: col:%d, val:%f\n", world_rank, m.col[j], m.val[j]);
 	}
 	// Example: broadcast a value from root (rank 0) to all processes
     /*int value;
