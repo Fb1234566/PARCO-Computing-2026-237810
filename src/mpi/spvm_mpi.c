@@ -49,7 +49,8 @@ int main(int argc, char **argv) {
 	int* bufCol;
 	double* bufVal;
 	int sendCountsOther[world_size];
-	int offsetPtr[world_size];
+	int sendCountsPtr[world_size];
+	int dispPtr[world_size];
 	int dispOther[world_size];
 
 
@@ -68,7 +69,7 @@ int main(int argc, char **argv) {
 		COOMatrix* cooMatrices = malloc(sizeof(COOMatrix)*world_size);
 		setRandSeed();
 		// Read the matrix as Coo
-		randomInitCOO(&c1, 10, 10, world_size, world_size*2);
+		randomInitCOO(&c1, 10, 10, world_size, world_size*10);
 	    //readMatrixCOO("datasets/inline_1.mtx", &c1);
 		bufCol = calloc(c1.nnz, sizeof(int));    
 		bufPtr = calloc(c1.rows+1, sizeof(int));
@@ -87,12 +88,16 @@ int main(int argc, char **argv) {
 		COOListToCSR(cooMatrices, procMatrices, world_size);
 		free(cooMatrices);
 		int offsetOther = 0;
-
+		int offsetPtr = 0;
 		//  Prepare the buffers, send counts and offsets in order to send the data vai scatterv
 		for(i=0; i<world_size; i++){
 			sendCountsOther[i] = procMatrices[i].nnz;
 			dispOther[i] = offsetOther;
 			offsetOther += sendCountsOther[i];
+
+			sendCountsPtr[i] = procMatrices[i].rows+1;
+			dispPtr[i] = offsetPtr;
+			offsetPtr += sendCountsPtr[i];
 			
 			// Column index
 			if (sendCountsOther[i] > 0 && procMatrices[i].col != NULL) {
@@ -107,8 +112,13 @@ int main(int argc, char **argv) {
 			     procMatrices[i].val,                     /* src (int*) */
 			     (size_t)sendCountsOther[i] * sizeof(bufVal[0])); /* bytes */
 			}
+					// Values
+			if (sendCountsPtr[i] > 0 && procMatrices[i].rowPtr != NULL) {
+			     memcpy(bufPtr + dispPtr[i],                 /* dest (int*) */
+			     procMatrices[i].rowPtr,                     /* src (int*) */
+			     (size_t)sendCountsPtr[i] * sizeof(bufPtr[0])); /* bytes */
+			}
 		}
-		
     }
 	
 	// send the previously compiled headers
@@ -133,11 +143,9 @@ int main(int argc, char **argv) {
 	
 	MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0,  MPI_COMM_WORLD);
 	MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-    int j;
-	for (j=0; j<m.nnz; j++){
-		printf("rank %d: col:%d, val:%f\n", world_rank, m.col[j], m.val[j]);
-	}
-	// Example: broadcast a value from root (rank 0) to all processes
+    MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
+	printf("====RANK %d====", world_rank);
+	printCSR(&m);
     /*int value;
     if (world_rank == 0) value = 12345;        // only root sets the value
     MPI_Bcast(&value, 1, MPI_INT, 0, MPI_COMM_WORLD);
