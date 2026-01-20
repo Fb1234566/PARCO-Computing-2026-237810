@@ -45,10 +45,10 @@ done
 cd /home/filippo.benedetti-2/PARCO-Computing-2026-237810
 
 # the code should be previously compiled
-mpicc ./src/mpi/spvm_mpi.c -o code.out
+make mpi
 #mpicxx code_mpi.cpp -o code.out
 
 # Run the code
-mpirun -np 4 ./code.out
+mpirun -np 4 ./bin/mpi
 # If you set the number of mpi processors, here it is enough to type
 # mpirun ./code.out
