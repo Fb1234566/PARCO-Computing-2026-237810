@@ -173,6 +173,10 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
         return;
     }
 
+	if (nnz < rows){
+		LOG_WARNING("Number of nnz is lower than the number of rows. This causes epmty lines and unbalanced matrices");
+	}
+
     COOEntry* elements = malloc(sizeof(COOEntry) * (size_t)nnz);
     if (!elements) {
         LOG_ERROR("Memory allocation failed for elements (nnz=%d)", nnz);
@@ -180,33 +184,30 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
     }
     LOG_INFO("Allocated elements buffer for %d entries", nnz);
 
-    int nnzPerRank = nnz / nRanks;
-    int currRank;
-    int rowsPerRank = rows / nRanks;
-    int currNumOfElems = 0;
+	int nnzPerRow = nnz/rows;
+	int insertedNNZ = 0;
+	int currRow = 0;
+	while (insertedNNZ < nnz){
+		COOEntry elem;
+        do {
+            elem.row = currRow%rows;
+            elem.col = generateRandInt(0, cols - 1);
+            elem.val = generateRandDouble(0.0, 10000.0);
+        } while (checkIfValueIsAlreadyPresent(elements, &elem, insertedNNZ));
+        elements[insertedNNZ] = elem;
+		insertedNNZ++;
+		currRow ++;
+	}
 
-    for (currRank = 0; currRank < nRanks; currRank++) {
-        int i;
-        for (i = 0; i < nnzPerRank; i++) {
-            COOEntry elem;
-            do {
-                elem.row = generateRandInt(currRank * rowsPerRank, currRank * rowsPerRank + rowsPerRank);
-                elem.col = generateRandInt(0, cols - 1);
-                elem.val = generateRandDouble(0.0, 10000.0);
-            } while (checkIfValueIsAlreadyPresent(elements, &elem, currNumOfElems));
-            elements[currNumOfElems] = elem;
-            currNumOfElems++;
-        }
-    }
 
-    LOG_INFO("Generated %d unique COO entries (before sort)", currNumOfElems);
+    LOG_INFO("Generated %d unique COO entries (before sort)", insertedNNZ);
 
-    qsort(elements, (size_t)currNumOfElems, sizeof(COOEntry), COOEntryCompartor);
-    LOG_INFO("Sorted %d COO entries", currNumOfElems);
+    qsort(elements, (size_t)insertedNNZ, sizeof(COOEntry), COOEntryCompartor);
+    LOG_INFO("Sorted %d COO entries", insertedNNZ);
 
     m->rows = rows;
     m->cols = cols;
-    m->nnz = currNumOfElems;
+    m->nnz = insertedNNZ;
     m->row = calloc((size_t)m->nnz, sizeof(int));
     m->col = calloc((size_t)m->nnz, sizeof(int));
     m->val = calloc((size_t)m->nnz, sizeof(double));
