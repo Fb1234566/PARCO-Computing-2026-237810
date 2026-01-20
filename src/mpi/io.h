@@ -53,4 +53,10 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, int P);
 void initCOO(COOMatrix* m, int rows, int cols, int nnz);
 
 void COOListToCSR(COOMatrix* in, CSRMatrix* out, int P);
+
+void printCSR(const CSRMatrix* m);
+
+void printCOO(const COOMatrix* m);
+
+
 #endif //DELIVERABLE1_2025_2026_IO_H
