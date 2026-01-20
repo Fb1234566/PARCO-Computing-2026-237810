@@ -174,7 +174,7 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
     }
 
 	if (nnz < rows){
-		LOG_WARNING("Number of nnz is lower than the number of rows. This causes epmty lines and unbalanced matrices");
+		LOG_WARN("Number of nnz is lower than the number of rows. This causes epmty lines and unbalanced matrices");
 	}
 
     COOEntry* elements = malloc(sizeof(COOEntry) * (size_t)nnz);
