@@ -192,7 +192,7 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
         do {
             elem.row = currRow%rows;
             elem.col = generateRandInt(0, cols - 1);
-            elem.val = generateRandDouble(0.0, 10000.0);
+            elem.val = generateRandDouble(-10000.0, 10000.0);
         } while (checkIfValueIsAlreadyPresent(elements, &elem, insertedNNZ));
         elements[insertedNNZ] = elem;
 		insertedNNZ++;
