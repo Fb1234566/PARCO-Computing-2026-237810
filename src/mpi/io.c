@@ -261,11 +261,24 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
 	int owner;
 	int* ownerIdx = calloc(P, sizeof(int));
 	int* valuesPerRow = calloc(P, sizeof(int));
+	int* rowsPerOwner = calloc(P, sizeof(int));
+	int* currRowPerOwner = calloc(P, sizeof(int));
+	int* lastRowPerOwner = calloc(P, sizeof(int));
 	LOG_INFO("splitCOOMatrix: allocated ownerIdx=%p valuesPerRow=%p for P=%d", (void*)ownerIdx, (void*)valuesPerRow, P);
+
+	// Initialize all last row per owner to -1
+	for (i=0; i<P; i++){
+		lastRowPerOwner[i] = -1;
+		currRowPerOwner[i] = -1;
+	}
 
 	for(i=0; i<inMatrix->nnz; i++) {
 		owner = inMatrix->row[i]%P;
 		valuesPerRow[owner]++;
+        if (inMatrix->row[i] != lastRowPerOwner[owner]) {
+            rowsPerOwner[owner]++;
+            lastRowPerOwner[owner] = inMatrix->row[i];
+        }
 	}
 
 	for(i=0; i<P; i++){
@@ -274,18 +287,26 @@ void splitCOOMatrix(COOMatrix* inMatrix, COOMatrix* arrayMatrices, const int P){
 
 	// Initialize array of matrices
 	for (i = 0; i < P; i++){
-		arrayMatrices[i].rows = inMatrix->rows;
+		arrayMatrices[i].rows = rowsPerOwner[i];
 		arrayMatrices[i].cols = inMatrix->cols;
 		arrayMatrices[i].nnz = valuesPerRow[i];
 		arrayMatrices[i].row = calloc(valuesPerRow[i], sizeof(int));
 		arrayMatrices[i].col = calloc(valuesPerRow[i], sizeof(int));
-		arrayMatrices[i].val = calloc(valuesPerRow[i], sizeof(double));	}
+		arrayMatrices[i].val = calloc(valuesPerRow[i], sizeof(double));}
 
+	for (i=0; i<P; i++){
+		lastRowPerOwner[i] = -1;
+	}
 	//slice the matrix
 	for (i = 0; i < inMatrix->nnz; i++){
 		owner = inMatrix->row[i]%P;
 		int* currIdx = &ownerIdx[owner];
-		arrayMatrices[owner].row[*currIdx] = inMatrix->row[i];
+
+		if (inMatrix->row[i] != lastRowPerOwner[owner]) {
+			++currRowPerOwner[owner];
+			lastRowPerOwner[owner] = inMatrix->row[i];
+		}
+		arrayMatrices[owner].row[*currIdx] = currRowPerOwner[owner];
 		arrayMatrices[owner].col[*currIdx] = inMatrix->col[i];
 		arrayMatrices[owner].val[*currIdx] = inMatrix->val[i];
 
@@ -318,7 +339,7 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
 }
 
 
-/*int main() {
+int main() {
     LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
 		fprintf(stderr, "Unable to initialize logger\n");
@@ -328,6 +349,7 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
     LOG_INFO("Step: Read matrix (COO)");
 	COOMatrix m;
     readMatrixCOO("datasets/prova", &m);
+	printCOO(&m);
 	COOMatrix* arr = malloc(sizeof(CSRMatrix)*4);
     LOG_INFO("Step completed: Read matrix (COO)");
 	splitCOOMatrix(&m, arr, 4);
@@ -358,4 +380,4 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
     logger_close();
     LOG_INFO("=== Program end ===");
     return 0;
-}*/
+}
