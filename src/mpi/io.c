@@ -339,7 +339,7 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
 }
 
 
-int main() {
+/*int main() {
     LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
 		fprintf(stderr, "Unable to initialize logger\n");
@@ -380,4 +380,4 @@ int main() {
     logger_close();
     LOG_INFO("=== Program end ===");
     return 0;
-}
+}*/
