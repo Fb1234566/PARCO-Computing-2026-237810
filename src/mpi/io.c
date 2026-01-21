@@ -338,13 +338,30 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, const int P){
 	}
 }
 
+void initVector(Vector* v, int len){
+	v->len = len;
+	v->val = calloc(len, sizeof(double));
+	int i;
+	for(i=0; i<len; i++){
+		v->val[i] = generateRandDouble(-10000.0, 10000.0);
+	}
+}
 
+void printVector(const Vector* v){
+	int i;
+	for(i=0; i<v->len; i++){
+		printf("idx: %d, val: %f\n", i, v->val[i]);
+	}
+}
 /*int main() {
     LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
 		fprintf(stderr, "Unable to initialize logger\n");
 		return 1;
 	}
+	Vector v;
+	initVector(&v, 15);
+	printVector(&v);
 
     LOG_INFO("Step: Read matrix (COO)");
 	COOMatrix m;

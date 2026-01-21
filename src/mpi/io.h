@@ -12,6 +12,11 @@ typedef struct COOEntry{
 	double val;
 } COOEntry;
 
+typedef struct vector {
+    int len;
+    double* val;
+} Vector;
+
 typedef struct COOMatrix{
     int rows;
     int cols;
@@ -57,6 +62,10 @@ void COOListToCSR(COOMatrix* in, CSRMatrix* out, int P);
 void printCSR(const CSRMatrix* m);
 
 void printCOO(const COOMatrix* m);
+
+void printVector(const Vector* v);
+
+void initVector(Vector* v, int len);
 
 
 #endif //DELIVERABLE1_2025_2026_IO_H
