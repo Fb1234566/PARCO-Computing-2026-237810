@@ -49,13 +49,13 @@ int main(int argc, char **argv) {
 	int* bufPtr;
 	int* bufCol;
 	double* bufVal;
+	Vector resVector;
 	int sendCountsOther[world_size];
 	int sendCountsV[world_size];
 	int sendCountsPtr[world_size];
 	int dispPtr[world_size];
 	int dispOther[world_size];
 	int dispV[world_size];
-
 
 	// Start logger
     LOG_INFO("=== Program start ===");
@@ -79,6 +79,8 @@ int main(int argc, char **argv) {
 		bufCol = calloc(c1.nnz, sizeof(int));    
 		bufPtr = calloc(c1.rows+1, sizeof(int));
 	    bufVal = calloc(c1.nnz, sizeof(double));
+		resVector.len = c1.rows;
+		resVector.val = calloc(c1.rows, sizeof(double));
 	    splitCOOMatrix(&c1, cooMatrices, world_size);
 
 		// Fill the headers in order to allow allocation of arrays
@@ -142,12 +144,16 @@ int main(int argc, char **argv) {
 
 	CSRMatrix m;
 	Vector v;
+	Vector res;
 	m.rows = myhdr.rows;
 	m.cols = myhdr.cols;
 	m.nnz = myhdr.nnz;
 	
 	v.len = m.cols;
 	v.val = malloc(sizeof(double)*m.cols);
+
+	res.len = m.rows;
+	res.val = calloc(m.rows, sizeof(double));
 
 	m.rowPtr = malloc(sizeof(int)*(m.rows+1));
 	m.col = malloc(sizeof(int)*m.nnz);
@@ -157,22 +163,18 @@ int main(int argc, char **argv) {
 	MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
     MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
     MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-	printf("====VECTOR====\n");
-	printVector(&v);
-	printf("====RANK %d====\n", world_rank);
-	printCSR(&m);
-    /*int value;
-    if (world_rank == 0) value = 12345;        // only root sets the value
-    MPI_Bcast(&value, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    printf("Rank %d received broadcast value %d\n", world_rank, value);
-
-    // Example: reduce (sum) values from all ranks to the root
-    int my_val = world_rank;
-    int sum = 0;
-    MPI_Reduce(&my_val, &sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    if (world_rank == 0) {
-        printf("Sum of ranks = %d\n", sum);
-    }*/
+	//printf("====RANK %d====\n", world_rank);
+	//printCSR(&m);
+	
+	//TODO: computation
+	
+	printf("====RESULT %d====\n", world_rank);
+	printVector(&res);
+	MPI_Gather(res.val, res.len, MPI_DOUBLE, resVector.val, res.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	if (world_rank == 0){
+		printVector(&resVector);
+	}
+		
 
     MPI_Finalize();                             // Clean up MPI
     return 0;
