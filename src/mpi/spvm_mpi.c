@@ -45,13 +45,16 @@ int main(int argc, char **argv) {
     
 	CSRHeader* headers = NULL;
     CSRMatrix* procMatrices = NULL;
+	Vector vector;
 	int* bufPtr;
 	int* bufCol;
 	double* bufVal;
 	int sendCountsOther[world_size];
+	int sendCountsV[world_size];
 	int sendCountsPtr[world_size];
 	int dispPtr[world_size];
 	int dispOther[world_size];
+	int dispV[world_size];
 
 
 	// Start logger
@@ -71,6 +74,8 @@ int main(int argc, char **argv) {
 		// Read the matrix as Coo
 		randomInitCOO(&c1, 10, 10, world_size, world_size*10);
 	    //readMatrixCOO("datasets/inline_1.mtx", &c1);
+		// Init the vector
+		initVector(&vector, c1.cols);
 		bufCol = calloc(c1.nnz, sizeof(int));    
 		bufPtr = calloc(c1.rows+1, sizeof(int));
 	    bufVal = calloc(c1.nnz, sizeof(double));
@@ -99,6 +104,9 @@ int main(int argc, char **argv) {
 			dispPtr[i] = offsetPtr;
 			offsetPtr += sendCountsPtr[i];
 			
+			sendCountsV[i] = procMatrices[i].cols;
+			dispV[i] = 0;
+
 			// Column index
 			if (sendCountsOther[i] > 0 && procMatrices[i].col != NULL) {
 				memcpy(bufCol + dispOther[i],                 /* dest (int*) */
@@ -133,9 +141,13 @@ int main(int argc, char **argv) {
 	world_rank, myhdr.rows, myhdr.cols, myhdr.nnz);
 
 	CSRMatrix m;
+	Vector v;
 	m.rows = myhdr.rows;
 	m.cols = myhdr.cols;
 	m.nnz = myhdr.nnz;
+	
+	v.len = m.cols;
+	v.val = malloc(sizeof(double)*m.cols);
 
 	m.rowPtr = malloc(sizeof(int)*(m.rows+1));
 	m.col = malloc(sizeof(int)*m.nnz);
@@ -144,7 +156,10 @@ int main(int argc, char **argv) {
 	MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0,  MPI_COMM_WORLD);
 	MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
     MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
-	printf("====RANK %d====", world_rank);
+    MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
+	printf("====VECTOR====\n");
+	printVector(&v);
+	printf("====RANK %d====\n", world_rank);
 	printCSR(&m);
     /*int value;
     if (world_rank == 0) value = 12345;        // only root sets the value
