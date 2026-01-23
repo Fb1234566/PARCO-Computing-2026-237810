@@ -67,5 +67,6 @@ void printVector(const Vector* v);
 
 void initVector(Vector* v, int len);
 
+bool compareVectors(Vector* v1, Vector* v2);
 
 #endif //DELIVERABLE1_2025_2026_IO_H

@@ -353,6 +353,21 @@ void printVector(const Vector* v){
 		printf("idx: %d, val: %f\n", i, v->val[i]);
 	}
 }
+
+bool compareVectors(Vector* v1, Vector* v2){
+	if (v1->len != v2->len){
+		LOG_ERROR("Icompatible sizes for comparison: %d and %d\n", v1->len, v2->len);
+		return false;
+	}
+	
+	int i;
+	for (i=0; i<v1->len; i++){
+		if (v1->val[i] != v2->val[i]) return false;
+	}
+	return true;
+}
+		
+
 /*int main() {
     LOG_INFO("=== Program start ===");
 	if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {

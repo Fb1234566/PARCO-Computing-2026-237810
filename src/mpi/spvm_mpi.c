@@ -7,6 +7,7 @@
 #include "io.h"
 #include "spvm_mpi.h"
 #include "logger.h"
+#include "spvm.h"
 
 typedef struct CSRheader{
 		int rows, cols, nnz;
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
 		COOMatrix c1;
 		CSRHeader* headers = NULL;
 		CSRMatrix* procMatrices = NULL;
-		Vector vector, finalRes;
+		Vector vector, finalRes, serialRes;
 		int* bufPtr;
 		int* bufCol;
 		double* bufVal;
@@ -59,24 +60,32 @@ int main(int argc, char **argv) {
 		int dispV[world_size];
 		int dispResV[world_size];
 		// Start logger
-		LOG_INFO("=== Program start ===");
 		if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
 				fprintf(stderr, "Unable to initialize logger\n");
 				return 1;
 		}
-
+		LOG_INFO("=== Program start ===");
 		if (world_rank == 0){
+				CSRMatrix mComplete;
 				procMatrices = malloc(sizeof(CSRMatrix)*world_size);
 				headers = malloc(sizeof(CSRHeader)*world_size);
 				COOMatrix* cooMatrices = malloc(sizeof(COOMatrix)*world_size);
 
 				setRandSeed();
 				// Read the matrix as Coo
-				randomInitCOO(&c1, 10, 10, world_size, world_size*10);
-				//readMatrixCOO("datasets/inline_1.mtx", &c1);
+				//randomInitCOO(&c1, 10, 10, world_size, world_size*10);
+				readMatrixCOO("datasets/inline_1.mtx", &c1);
 
 				// Init the vector
 				initVector(&vector, c1.cols);
+
+				LOG_INFO("Computing correct result\n");
+				// Compute correct result
+				serialRes.len = c1.rows;
+				serialRes.val = calloc(c1.rows, sizeof(double));
+				COOToCSR(&c1, &mComplete);
+				computeSpvmSerial(&mComplete, &vector, &serialRes);
+				LOG_INFO("Computation done\n");
 
 				// init the buffers
 				bufCol = calloc(c1.nnz, sizeof(int));    
@@ -184,17 +193,9 @@ int main(int argc, char **argv) {
 		//printCSR(&m);
 
 		// Computation
-		int row;
-		int idx;
-		for(row = 0; row < m.rows; row++) {
-				double partialSum = 0.0f;
-				for(idx = m.rowPtr[row]; idx < m.rowPtr[row + 1]; ++idx){
-						const int col = m.col[idx];
-						partialSum += v.val[col] * m.val[idx];
-				}
-				res.val[row] = partialSum;
-		}
-
+		LOG_INFO("Computing result for rank %d\n", world_rank);
+		computeSpvmSerial(&m, &v, &res);
+		LOG_INFO("Computation for rank %d done\n", world_rank);
 		//printf("====RESULT %d====\n", world_rank);
 		//printVector(&res);
 		MPI_Gather(res.val, res.len, MPI_DOUBLE, resVector.val, res.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -220,6 +221,13 @@ int main(int argc, char **argv) {
 						finalRes.val[currRank+localIdx*world_size] = resVector.val[row];
 						localIdx++;
 				}
+
+				if (compareVectors(&finalRes, &serialRes)){
+					LOG_INFO("Result is correct");
+				} else {
+					LOG_ERROR("Result is incorrect");
+				}
+
 				for(int i = 0; i < world_size; i++){
 						free(procMatrices[i].rowPtr);
 						free(procMatrices[i].col);
