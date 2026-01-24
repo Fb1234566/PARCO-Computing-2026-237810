@@ -112,12 +112,9 @@ int main(int argc, char **argv) {
 
                 setRandSeed();
 
-                // --- Matrix Generation Logic ---
                 if (strcmp(matrix_type, "synthetic") == 0) {
                     LOG_INFO("Generating synthetic matrix: %dx%d with %d NNZ", syn_rows, syn_cols, syn_nnz);
-                    // Assuming randomInitCOO signature matches: (matrix, rows, cols, nnz)
-                    // If your library requires world_size as per previous comments, adjust arguments below.
-                    randomInitCOO(&c1, syn_rows, syn_cols, syn_nnz);
+                    randomInitCOO(&c1, syn_rows, syn_cols, world_size, syn_nnz);
                 } else {
                     LOG_INFO("Reading matrix from file: %s", file_path);
                     readMatrixCOO(file_path, &c1);
