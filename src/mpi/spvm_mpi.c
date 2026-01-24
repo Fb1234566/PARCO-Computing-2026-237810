@@ -34,6 +34,65 @@ int create_csr_header_type(MPI_Datatype *out_type) {
 }
 
 int main(int argc, char **argv) {
+
+	enum Mode { MODE_REAL = 0, MODE_SYNTHETIC = 1 };
+	int mode = -1;
+	const char *matrix_path = NULL;
+	long synth_rows = 0, synth_cols = 0, synth_nnz = 0;
+
+	/* Usage check and parsing (prima di MPI_Init) */
+	if (argc < 2) {
+		fprintf(stderr, "Usage:\n  %s real <matrix_path>\n  %s synthetic <rows> <cols> <nnz>\n", argv[0], argv[0]);
+		return 1;
+	}
+
+	if (strcmp(argv[1], "real") == 0) {
+		if (argc != 3) {
+			fprintf(stderr, "Usage: %s real <matrix_path>\n", argv[0]);
+			return 1;
+		}
+		matrix_path = argv[2];
+		struct stat sb;
+		if (stat(matrix_path, &sb) != 0) {
+			fprintf(stderr, "Errore: impossibile accedere a %s: %s\n", matrix_path, strerror(errno));
+			return 2;
+		}
+		if (!S_ISREG(sb.st_mode)) {
+			fprintf(stderr, "Errore: %s non è un file regolare\n", matrix_path);
+			return 3;
+		}
+		mode = MODE_REAL;
+	} else if (strcmp(argv[1], "synthetic") == 0) {
+		if (argc != 5) {
+			fprintf(stderr, "Usage: %s synthetic <rows> <cols> <nnz>\n", argv[0]);
+			return 1;
+		}
+		char *endptr = NULL;
+		errno = 0;
+		synth_rows = strtol(argv[2], &endptr, 10);
+		if (errno != 0 || *endptr != '\0' || synth_rows <= 0) {
+			fprintf(stderr, "Errore: <rows> deve essere un intero positivo\n");
+			return 4;
+		}
+		errno = 0;
+		synth_cols = strtol(argv[3], &endptr, 10);
+		if (errno != 0 || *endptr != '\0' || synth_cols <= 0) {
+			fprintf(stderr, "Errore: <cols> deve essere un intero positivo\n");
+			return 4;
+		}
+		errno = 0;
+		synth_nnz = strtol(argv[4], &endptr, 10);
+		if (errno != 0 || *endptr != '\0' || synth_nnz <= 0) {
+			fprintf(stderr, "Errore: <nnz> deve essere un intero positivo\n");
+			return 4;
+		}
+		mode = MODE_SYNTHETIC;
+	} else {
+		fprintf(stderr, "Modo sconosciuto: %s\n", argv[1]);
+		fprintf(stderr, "Usage:\n  %s real <matrix_path>\n  %s synthetic <rows> <cols> <nnz>\n", argv[0], argv[0]);
+		return 1;
+	}
+
 		MPI_Init(&argc, &argv);                     // Initialize MPI
 
 		int world_size, world_rank;
@@ -72,10 +131,11 @@ int main(int argc, char **argv) {
 				COOMatrix* cooMatrices = malloc(sizeof(COOMatrix)*world_size);
 
 				setRandSeed();
-				// Read the matrix as Coo
-				//randomInitCOO(&c1, 10, 10, world_size, world_size*10);
-				readMatrixCOO("datasets/inline_1.mtx", &c1);
-
+				if (mode == MODE_REAL) {
+					readMatrixCOO(matrix_path, &c1)
+				} else {
+					randomInitCOO(&c1, (int)synth_rows, (int)synth_cols, world_size, (int)synth_nnz);
+				}
 				// Init the vector
 				initVector(&vector, c1.cols);
 
