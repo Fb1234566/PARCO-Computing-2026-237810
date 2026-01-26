@@ -357,6 +357,7 @@ int main(int argc, char **argv) {
             v.value[0] = computeTime;      /* Time */
             v.value[1] = iteration;     /* Iteration */
             v.value[2] = status;      /* Status as numeric */
+			v.value[3] = nprocs;
 
             /* Append the values row */
             appendToCSV(NULL, &v, final_export_path);
