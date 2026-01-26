@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <mpi.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <stdbool.h>
 #include "io.h"
 #include "spvm_mpi.h"
 #include "logger.h"
@@ -311,7 +313,36 @@ int main(int argc, char **argv) {
             h.s[2] = strdup("Status");
 
             /* Write header (only writes if file is empty) */
-            appendToCSV(&h, NULL, export_path);
+
+            /* If export_path is a directory, build a file path inside it with the format:
+               stats_mpi_SpMV_<sanitized>.csv
+               where <sanitized> is either the sanitized file path (slashes -> underscores)
+               or a synthetic description like synthetic_<rows>x<cols>_<nnz>.
+            */
+            char *final_export_path = export_path;
+            bool allocated_path = false;
+            struct stat st;
+            if (stat(export_path, &st) == 0 && S_ISDIR(st.st_mode)) {
+                char sanitized[512];
+                if (strcmp(matrix_type, "synthetic") == 0) {
+                    snprintf(sanitized, sizeof(sanitized), "synthetic_%dx%d_%d", syn_rows, syn_cols, syn_nnz);
+                } else {
+                    /* Copy file_path and replace '/' with '_' */
+                    snprintf(sanitized, sizeof(sanitized), "%s", file_path);
+                    for (char *p = sanitized; *p; ++p) if (*p == '/') *p = '_';
+                }
+                size_t need = strlen(export_path) + 1 + strlen("stats_mpi_SpMV_") + strlen(sanitized) + strlen(".csv") + 1;
+                final_export_path = malloc(need);
+                if (!final_export_path) { perror("malloc"); return 1; }
+                allocated_path = true;
+                if (export_path[strlen(export_path)-1] == '/') {
+                    snprintf(final_export_path, need, "%sstats_mpi_SpMV_%s.csv", export_path, sanitized);
+                } else {
+                    snprintf(final_export_path, need, "%s/stats_mpi_SpMV_%s.csv", export_path, sanitized);
+                }
+            }
+
+            appendToCSV(&h, NULL, final_export_path);
 
             /* Initialize values for one row */
             Values v;
@@ -323,14 +354,15 @@ int main(int argc, char **argv) {
             v.value[2] = status;      /* Status as numeric */
 
             /* Append the values row */
-            appendToCSV(NULL, &v, export_path);
+            appendToCSV(NULL, &v, final_export_path);
 
             /* Free allocated memory */
             for (int i = 0; i < h.count; ++i) free(h.s[i]);
             free(h.s);
             free(v.value);
+            if (allocated_path) free(final_export_path);
 
-            printf("Wrote header and one row to %s\n", export_path);
+            printf("Wrote header and one row to %s\n", final_export_path == export_path ? export_path : final_export_path);
             return 0;
         }
 
