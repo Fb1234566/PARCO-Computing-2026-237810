@@ -76,9 +76,7 @@ int main(int argc, char **argv) {
                 syn_cols = atoi(argv[++i]);
             } else if (strcmp(argv[i], "--nnz") == 0 && i + 1 < argc) {
                 syn_nnz = atoi(argv[++i]);
-            } else if (strcmp(argv[i], "--file") == 0 && i + 1 < argc) {
-                ex = argv[++i];
-            } else if (strcmp(argv[i], "--file") == 0 && i + 1 < argc) {
+            } else if (strcmp(argv[i], "--export") == 0 && i + 1 < argc) {
                 export_path = argv[++i];
             }
 

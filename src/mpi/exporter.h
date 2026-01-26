@@ -12,7 +12,7 @@ typedef struct {
     int len;
 } Values;
 
-void appendToCSV(Header* h = NULL, Values* v = NULL, char* path = NULL);
+void appendToCSV(Header* h, Values* v, char* path);
 
 
 
