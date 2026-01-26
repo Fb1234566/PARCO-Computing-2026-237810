@@ -17,7 +17,7 @@ void print_help(char *prog_name) {
     printf("  --rows <int>    Number of rows (required if type is 'synthetic')\n");
     printf("  --cols <int>    Number of columns (required if type is 'synthetic')\n");
     printf("  --nnz  <int>    Number of non-zero elements (required if type is 'synthetic')\n");
-    printf("  --export <path> Path to result file\n")
+    printf("  --export <path> Path to result file\n");
     printf("  --help          Show this help message\n");
 }
 
