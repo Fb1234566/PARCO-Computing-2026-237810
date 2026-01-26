@@ -129,7 +129,7 @@ for nprocs in "${MPi_SIZES[@]}"; do
   for iter in $(seq 1 "$ITERATIONS"); do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] MPI procs=$nprocs iter=$iter/$ITERATIONS: $RELPATH -> $OUTDIR"
     # Use configured MPI runner (mpirun or srun or other)
-    if ! $MPI_RUN_CMD -np "$nprocs" "$BIN_MPI" "$RELPATH" "$iter" "$OUTDIR"; then
+    if ! $MPI_RUN_CMD -np "$nprocs" "$BIN_MPI" --type file --file "$MATRIX_PATH" --iteration "$iter" --export "$OUTDIR"; then
       echo "Execution failed for \`$RELPATH\` procs $nprocs iter $iter (mpi)" >&2
     fi
   done
