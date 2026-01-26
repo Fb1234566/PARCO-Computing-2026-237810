@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
             free(h.s);
             free(v.value);
 
-            printf("Wrote header and one row to %s\n", path);
+            printf("Wrote header and one row to %s\n", export_path);
             return 0;
         }
 
