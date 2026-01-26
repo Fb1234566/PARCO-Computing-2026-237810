@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
         // --- Argument Parsing Defaults ---
         char *matrix_type = "file";
         char *file_path = "datasets/inline_1.mtx";
-        char *export_path = "result/temp.csv";
+        char *export_path = "results/temp.csv";
         int syn_rows = 1000;
         int syn_cols = 1000;
         int syn_nnz = 5000;
