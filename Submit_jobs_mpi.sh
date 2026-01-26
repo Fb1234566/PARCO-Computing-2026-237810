@@ -3,20 +3,25 @@ set -euo pipefail
 
 DATA_DIR="datasets"
 
-# Build only MPI target
-make clean
-make mpi
-
 # Load modules required for MPI runs and Python analysis
 module load gcc91
 module load mpich-3.2.1--gcc-9.1.0
 module load python-3.10.14
 
-mpicc() {
-    mpicc-3.2.1 "${@}"
-}
+# Verify mpicc is available (module should provide it)
+if ! command -v mpicc >/dev/null 2>&1; then
+    echo "Error: mpicc not found in PATH. Make sure the MPI module is available." >&2
+    exit 1
+fi
 
-python3 -m venv .venv
+# Build only MPI target
+make clean
+make mpi
+
+# Create a Python virtual environment (for analysis) and install minimal deps
+if [ ! -d "./.venv" ]; then
+  python3 -m venv .venv
+fi
 source ./.venv/bin/activate
 pip install --upgrade pip
 pip install numpy matplotlib pandas scipy
