@@ -78,7 +78,10 @@ int main(int argc, char **argv) {
                 syn_nnz = atoi(argv[++i]);
             } else if (strcmp(argv[i], "--file") == 0 && i + 1 < argc) {
                 ex = argv[++i];
+            } else if (strcmp(argv[i], "--file") == 0 && i + 1 < argc) {
+                export_path = argv[++i];
             }
+
         }
 
         // Create the data type to be sent via csr
@@ -289,28 +292,38 @@ int main(int argc, char **argv) {
                 free(resVector.val);
                 free(finalRes.val);
                 Header h1;
-            const char* names[] = { "id", "name", "score" };
-            const int count = sizeof(names) / sizeof(names[0]);
 
+            /* Initialize header with 3 columns */
             Header h;
-            h.count = count;
-            h.s = (char**)std::malloc(count * sizeof(char*));
-            h.offsets = (int*)std::malloc(count * sizeof(int));
+            h.count = 3;
+            h.s = malloc(sizeof(char*) * h.count);
+            if (!h.s) { perror("malloc"); return 1; }
+            h.s[0] = strdup("Time");
+            h.s[1] = strdup("Iteration");
+            h.s[2] = strdup("Status");
 
-            int offset = 0;
-            for (int i = 0; i < count; ++i) {
-                h.s[i] = strdup(names[i]);            // alloca copia della stringa
-                h.offsets[i] = offset;               // offset corrente
-                offset += static_cast<int>(std::strlen(h.s[i])) + 1; // +1 per '\0'
-            }
+            /* Write header (only writes if file is empty) */
+            appendToCSV(&h, NULL, export_path);
 
-            appendToCSV(&h, nullptr, (char*)"out.csv");
+            /* Initialize values for one row */
+            Values v;
+            v.len = 3;
+            v.value = malloc(sizeof(double) * v.len);
+            if (!v.value) { perror("malloc"); return 1; }
+            v.value[0] = 0.0;      /* Time */
+            v.value[1] = 2.0;     /* Iteration */
+            v.value[2] = 1.0;      /* Status as numeric */
 
-            for (int i = 0; i < count; ++i) {
-                free(h.s[i]);
-            }
+            /* Append the values row */
+            appendToCSV(NULL, &v, export_path);
+
+            /* Free allocated memory */
+            for (int i = 0; i < h.count; ++i) free(h.s[i]);
             free(h.s);
-            free(h.offsets);
+            free(v.value);
+
+            printf("Wrote header and one row to %s\n", path);
+            return 0;
         }
 
         MPI_Finalize();                     // Clean up MPI
