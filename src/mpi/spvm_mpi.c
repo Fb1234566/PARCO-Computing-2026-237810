@@ -18,7 +18,8 @@ void print_help(char *prog_name) {
     printf("  --cols <int>    Number of columns (required if type is 'synthetic')\n");
     printf("  --nnz  <int>    Number of non-zero elements (required if type is 'synthetic')\n");
     printf("  --export <path> Path to result file\n");
-    printf("  --help          Show this help message\n");
+    printf("  --iteration <int> Path to result file\n");
+	printf("  --help          Show this help message\n");
 }
 
 typedef struct CSRheader{
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
         int syn_rows = 1000;
         int syn_cols = 1000;
         int syn_nnz = 5000;
-
+		int iteration = 0;
         // Simple manual parsing
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--help") == 0) {
@@ -78,6 +79,8 @@ int main(int argc, char **argv) {
                 syn_nnz = atoi(argv[++i]);
             } else if (strcmp(argv[i], "--export") == 0 && i + 1 < argc) {
                 export_path = argv[++i];
+            } else if (strcmp(argv[i], "--iteration") == 0 && i + 1 < argc) {
+                iteration = atoi(argv[++i]);
             }
 
         }
@@ -87,6 +90,7 @@ int main(int argc, char **argv) {
         create_csr_header_type(&csr_header_type);
 
         COOMatrix c1;
+		double computeTime;
         CSRHeader* headers = NULL;
         CSRMatrix* procMatrices = NULL;
         Vector vector, finalRes, serialRes;
@@ -239,14 +243,17 @@ int main(int argc, char **argv) {
         MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
         MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-
+		double start, end;
         // Computation
         LOG_INFO("Computing result for rank %d\n", world_rank);
-        computeSpvmSerial(&m, &v, &res);
+        MPI_Barrier(MPI_COMM_WORLD);
+		start = MPI_Wtime();
+		computeSpvmSerial(&m, &v, &res);
+		end = MPI_Wtime();
         LOG_INFO("Computation for rank %d done\n", world_rank);
-
+		double diff = end - start;
         MPI_Gather(res.val, res.len, MPI_DOUBLE, resVector.val, res.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
+		MPI_Reduce(&diff, &computeTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         free(m.rowPtr);
         free(m.col);
         free(m.val);
@@ -257,6 +264,7 @@ int main(int argc, char **argv) {
                 int row;
                 int currRank = 0;
                 int localIdx = 0;
+				bool status = false;
 
                 for(row=0; row<c1.rows; row++){
 
@@ -268,9 +276,11 @@ int main(int argc, char **argv) {
                         finalRes.val[currRank+localIdx*world_size] = resVector.val[row];
                         localIdx++;
                 }
-
+				
+				
                 if (compareVectors(&finalRes, &serialRes)){
                     LOG_INFO("Result is correct");
+					status = true;
                 } else {
                     LOG_ERROR("Result is incorrect");
                 }
@@ -308,9 +318,9 @@ int main(int argc, char **argv) {
             v.len = 3;
             v.value = malloc(sizeof(double) * v.len);
             if (!v.value) { perror("malloc"); return 1; }
-            v.value[0] = 0.0;      /* Time */
-            v.value[1] = 2.0;     /* Iteration */
-            v.value[2] = 1.0;      /* Status as numeric */
+            v.value[0] = computeTime;      /* Time */
+            v.value[1] = iteration;     /* Iteration */
+            v.value[2] = status;      /* Status as numeric */
 
             /* Append the values row */
             appendToCSV(NULL, &v, export_path);
