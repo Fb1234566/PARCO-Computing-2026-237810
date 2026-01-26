@@ -5,18 +5,20 @@
 #include "io.h"
 #include "spvm_mpi.h"
 #include "logger.h"
+#include "exporter.h"
 #include "spvm.h"
 
 // --- Helper for CLI arguments ---
 void print_help(char *prog_name) {
     printf("Usage: %s [OPTIONS]\n", prog_name);
     printf("Options:\n");
-    printf("  --type <str>   Matrix source type: 'file' or 'synthetic' (default: file)\n");
-    printf("  --file <path>  Path to .mtx file (required if type is 'file')\n");
-    printf("  --rows <int>   Number of rows (required if type is 'synthetic')\n");
-    printf("  --cols <int>   Number of columns (required if type is 'synthetic')\n");
-    printf("  --nnz  <int>   Number of non-zero elements (required if type is 'synthetic')\n");
-    printf("  --help         Show this help message\n");
+    printf("  --type <str>    Matrix source type: 'file' or 'synthetic' (default: file)\n");
+    printf("  --file <path>   Path to .mtx file (required if type is 'file')\n");
+    printf("  --rows <int>    Number of rows (required if type is 'synthetic')\n");
+    printf("  --cols <int>    Number of columns (required if type is 'synthetic')\n");
+    printf("  --nnz  <int>    Number of non-zero elements (required if type is 'synthetic')\n");
+    printf("  --export <path> Path to result file\n")
+    printf("  --help          Show this help message\n");
 }
 
 typedef struct CSRheader{
@@ -53,6 +55,7 @@ int main(int argc, char **argv) {
         // --- Argument Parsing Defaults ---
         char *matrix_type = "file";
         char *file_path = "datasets/inline_1.mtx";
+        char *export_path = "result/temp.csv";
         int syn_rows = 1000;
         int syn_cols = 1000;
         int syn_nnz = 5000;
@@ -73,6 +76,8 @@ int main(int argc, char **argv) {
                 syn_cols = atoi(argv[++i]);
             } else if (strcmp(argv[i], "--nnz") == 0 && i + 1 < argc) {
                 syn_nnz = atoi(argv[++i]);
+            } else if (strcmp(argv[i], "--file") == 0 && i + 1 < argc) {
+                ex = argv[++i];
             }
         }
 
@@ -283,8 +288,29 @@ int main(int argc, char **argv) {
                 free(vector.val);
                 free(resVector.val);
                 free(finalRes.val);
+                Header h1;
+            const char* names[] = { "id", "name", "score" };
+            const int count = sizeof(names) / sizeof(names[0]);
 
+            Header h;
+            h.count = count;
+            h.s = (char**)std::malloc(count * sizeof(char*));
+            h.offsets = (int*)std::malloc(count * sizeof(int));
 
+            int offset = 0;
+            for (int i = 0; i < count; ++i) {
+                h.s[i] = strdup(names[i]);            // alloca copia della stringa
+                h.offsets[i] = offset;               // offset corrente
+                offset += static_cast<int>(std::strlen(h.s[i])) + 1; // +1 per '\0'
+            }
+
+            appendToCSV(&h, nullptr, (char*)"out.csv");
+
+            for (int i = 0; i < count; ++i) {
+                free(h.s[i]);
+            }
+            free(h.s);
+            free(h.offsets);
         }
 
         MPI_Finalize();                     // Clean up MPI

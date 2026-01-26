@@ -3,9 +3,7 @@
 
 static char* format_double(double d) {
     char buf[64];
-    /* precisione fissa 6 decimali, si può adattare */
     snprintf(buf, sizeof(buf), "%.6f", d);
-    /* trim trailing zeros */
     size_t n = strlen(buf);
     if (strchr(buf, '.')) {
         while (n > 0 && buf[n-1] == '0') { buf[--n] = '\0'; }
@@ -25,6 +23,7 @@ void appendToCSV(Header* h, Values* v, char* path) {
     }
 	if (h!=nullptr && v!=nullptr) {
 		LOG_ERROR("appendToCSV: export type must either be header or value, not  both.\n");
+		return;
 	}
 
     int fileEmpty = 1;

@@ -1,5 +1,6 @@
 #ifndef DELIVERABLE1_2025_2026_EXPORTER_H
 #define DELIVERABLE1_2025_2026_EXPORTER_H
+#include <cstddef>
 
 typedef struct {
     char** s;
@@ -12,7 +13,7 @@ typedef struct {
     int len;
 } Values;
 
-void appendToCSV(Header* h = nullptr, Values* v = nullptr, char* path = nullptr);
+void appendToCSV(Header* h = NULL, Values* v = NULL, char* path = NULL);
 
 
 
