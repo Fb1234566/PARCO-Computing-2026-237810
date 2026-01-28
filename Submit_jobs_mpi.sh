@@ -41,6 +41,7 @@ mkdir -p "$DATA_DIR"
 
 # Generate synthetic matrices for weak scaling
 echo "Generating synthetic matrices for weak scaling analysis..."
+cd datasets
 for mpi_size in "${MPI_SIZES[@]}"; do
     rows=$((1000 * mpi_size))
     cols=$((1000 * mpi_size))
@@ -49,7 +50,7 @@ for mpi_size in "${MPI_SIZES[@]}"; do
     ./bin/create_synthetic_matrices "$rows" "$cols" "$nnz"
 done
 echo "Synthetic matrices generated successfully."
-
+cd ..
 # Submit jobs for each matrix and each MPI size
 for f in "$DATA_DIR"/*.mtx; do
   if [[ -f "$f" ]]; then
