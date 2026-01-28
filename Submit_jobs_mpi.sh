@@ -51,22 +51,21 @@ for mpi_size in "${MPI_SIZES[@]}"; do
 done
 echo "Synthetic matrices generated successfully."
 cd ..
-# Submit jobs for each matrix and each MPI size
+
+# Submit one job per matrix (loop over MPI_SIZES happens inside the PBS job)
 for f in "$DATA_DIR"/*.mtx; do
   if [[ -f "$f" ]]; then
     abs_path=$(realpath "$f")
     matrix_name=$(basename "$f" | sed 's/\.[^.]*$//')
 
-    for mpi_size in "${MPI_SIZES[@]}"; do
-      output_dir="$WORKDIR/results/run_${RUN_TIMESTAMP}/${matrix_name}/mpi_${mpi_size}/"
-      graph_dir="$WORKDIR/plots/run_${RUN_TIMESTAMP}/${matrix_name}/mpi_${mpi_size}/"
+    output_dir="$WORKDIR/results/run_${RUN_TIMESTAMP}/${matrix_name}/"
+    graph_dir="$WORKDIR/plots/run_${RUN_TIMESTAMP}/${matrix_name}/"
 
     mkdir -p "$output_dir"
     mkdir -p "$graph_dir"
 
-      qsub -v MATRIX="$abs_path",OUTPUT_DIR="$output_dir",GRAPH_DIR="$graph_dir",MPI_PROCS="$mpi_size" Run.pbs
-      echo "Submitted job for $matrix_name with MPI_PROCS=$mpi_size"
-    done
+    qsub -v MATRIX="$abs_path",OUTPUT_DIR="$output_dir",GRAPH_DIR="$graph_dir",MPI_SIZES="${MPI_SIZES[*]}" Run.pbs
+    echo "Submitted job for $matrix_name with all MPI_SIZES"
   fi
 done
 
