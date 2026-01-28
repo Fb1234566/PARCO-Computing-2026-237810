@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
 
         // send the previously compiled headers
         CSRHeader myhdr;
-        int* csrPtr, csrCol;
+        int* csrPtr, *csrCol;
         double* csrVal;
         MPI_Scatter(headers, 1, csr_header_type,
                         &myhdr,  1, csr_header_type,
@@ -286,14 +286,19 @@ int main(int argc, char **argv) {
                         finalRes.val[currRank+localIdx*world_size] = resVector.val[row];
                         localIdx++;
                 }
-				
-				
+
+
                 if (compareVectors(&finalRes, &serialRes)){
                     LOG_INFO("Result is correct");
 					status = true;
                 } else {
                     LOG_ERROR("Result is incorrect");
                 }
+
+				free(c1.row);
+				free(c1.col);
+				free(c1.val);
+				free(serialRes.val);
 
                 for(int i = 0; i < world_size; i++){
                         free(procMatrices[i].rowPtr);
