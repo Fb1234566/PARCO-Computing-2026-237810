@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
         double* bufVal;
         Vector resVector;
 		resVector.len = 0;
-		resVector.val = NULL;fix error
+		resVector.val = NULL;
         int sendCountsOther[world_size];
         int sendCountsV[world_size];
         int sendCountsPtr[world_size];
