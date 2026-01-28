@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
         CSRHeader myhdr;
         int* csrPtr, *csrCol;
         double* csrVal;
-        MPI_Scatter(headers,         if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
+        MPI_Scatter(headers,
 1, csr_header_type,
                         &myhdr,  1, csr_header_type,
                         0, MPI_COMM_WORLD);
