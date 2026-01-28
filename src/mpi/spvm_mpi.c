@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
         int* bufPtr;
         int* bufCol;
         double* bufVal;
-        Vector resVector;
+        Vector resVector = NULL;
         int sendCountsOther[world_size];
         int sendCountsV[world_size];
         int sendCountsPtr[world_size];
