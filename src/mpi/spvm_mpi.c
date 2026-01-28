@@ -111,6 +111,7 @@ int main(int argc, char **argv) {
         int dispOther[world_size];
         int dispV[world_size];
         int dispResV[world_size];
+		int reciveCountsResV[world_size];
 
         // Start logger
         if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
@@ -168,6 +169,7 @@ int main(int argc, char **argv) {
                         } else {
                                 dispResV[i] = dispResV[i-1]+headers[i-1].rows;
                         }
+						reciveCountsResV[i] = headers[i].rows;
                 }
 
                 // Split the matrix into parts and convert them to CSR
@@ -258,7 +260,7 @@ int main(int argc, char **argv) {
 		end = MPI_Wtime();
         LOG_INFO("Computation for rank %d done\n", world_rank);
 		double diff = end - start;
-        MPI_Gather(res.val, res.len, MPI_DOUBLE, resVector.val, res.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Gatherv(res.val, res.len, MPI_DOUBLE, resVector.val, reciveCountsResV, dispResV, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Reduce(&diff, &computeTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         free(m.rowPtr);
         free(m.col);
@@ -357,7 +359,7 @@ int main(int argc, char **argv) {
             v.value[0] = computeTime;      /* Time */
             v.value[1] = iteration;     /* Iteration */
             v.value[2] = status;      /* Status as numeric */
-			v.value[3] = nprocs;
+			v.value[3] = nprocs;	/* number of processros */
 
             /* Append the values row */
             appendToCSV(NULL, &v, final_export_path);
