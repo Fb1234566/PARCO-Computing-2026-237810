@@ -1,17 +1,18 @@
 # Compiler
 CXX := g++-9.1.0
 MPICC := mpicc
-
+CC := gcc
 
 # Base flags
 BASE_CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -O2 -g -I.
-
+BASE_CFLAGS := -std=c99 -Wall -Wextra -Wpedantic -O2 -g -I. -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
 # Folder-specific flags (customizable)
 CXXFLAGS_MAIN    := $(BASE_CXXFLAGS)
 CXXFLAGS_GENERIC := $(BASE_CXXFLAGS)
 CXXFLAGS_SERIAL  := $(BASE_CXXFLAGS)
 CXXFLAGS_OMP     := $(BASE_CXXFLAGS) -fopenmp
 CXXFLAGS_MPI     :=
+CFLAGS_SYNTH     := $(BASE_CFLAGS)
 
 # Linker flags
 LDFLAGS := -fopenmp
@@ -38,6 +39,8 @@ SRCS_OMP     := $(wildcard src/openMP/*.cpp)
 
 SRCS_MPI := $(wildcard src/mpi/*.c)
 
+SRCS_SYNTH := src/utils/CreateSytheticMatrices.c src/utils/DataFactory.c src/mpi/io.c src/mpi/logger.c
+
 # Objects and dependencies
 OBJS_MAIN    := $(SRCS_MAIN:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_GENERIC := $(SRCS_GENERIC:%.cpp=$(OBJ_DIR)/%.o)
@@ -49,6 +52,7 @@ OBJS_OMP_GUIDED_ONLY := $(SRCS_OMP_GUIDED_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP_DYNAMIC_ONLY := $(SRCS_OMP_DYNAMIC_ONLY:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_OMP     := $(SRCS_OMP:%.cpp=$(OBJ_DIR)/%.o)
 OBJS_MPI := $(SRCS_MPI:%.c=$(OBJ_DIR)/%.o)
+OBJS_SYNTH := $(SRCS_SYNTH:%.c=$(OBJ_DIR)/%.o)
 OBJS         := $(OBJS_MAIN) $(OBJS_GENERIC) $(OBJS_SERIAL) $(OBJS_OMP)
 DEPS         := $(OBJS:.o=.d)
 
@@ -61,15 +65,15 @@ TARGET_OMP := $(BIN_DIR)/openmp_spmv
 # MPI target
 TARGET_MPI := $(BIN_DIR)/mpi
 
-
 TARGET_OMP_BINNING := $(BIN_DIR)/openmp_spmv_binning
 
 TARGET_OMP_GUIDED := $(BIN_DIR)/openmp_spmv_guided
 TARGET_OMP_DYNAMIC := $(BIN_DIR)/openmp_spmv_dynamic
 
-.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-static-only openmp-binning-only openmp-dynamic-only openmp-guided-only
+# Synthetic matrices target
+TARGET_SYNTH := $(BIN_DIR)/create_synthetic_matrices
 
-.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-static-only openmp-binning-only openmp-dynamic-only
+.PHONY: all run clean datasets list-datasets clean-datasets serial-only openmp-static-only openmp-binning-only openmp-dynamic-only openmp-guided-only synth
 
 all: $(TARGET)
 
@@ -116,6 +120,13 @@ $(TARGET_MPI): $(SRCS_MPI)
 	@mkdir -p $(BIN_DIR)
 	$(MPICC) $(SRCS_MPI) -o $@ -g
 
+# Synthetic matrices target
+synth: $(TARGET_SYNTH)
+
+$(TARGET_SYNTH): $(OBJS_SYNTH)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(OBJS_SYNTH) -o $@ $(LDFLAGS) -lpthread
+
 # Specific compilation rules
 $(OBJ_DIR)/main.o: main.cpp
 	@mkdir -p $(dir $@)
@@ -140,6 +151,18 @@ $(OBJ_DIR)/src/openMP/%.o: src/openMP/%.cpp
 $(OBJ_DIR)/src/mpi/%.o: src/mpi/%.c
 	@mkdir -p $(dir $@)
 	$(MPICC) $(CXXFLAGS_MPI) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR)/src/utils/%.o: src/utils/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_SYNTH) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR)/src/mpi/io.o: src/mpi/io.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_SYNTH) -MMD -MP -c $< -o $@
+
+$(OBJ_DIR)/src/mpi/logger.o: src/mpi/logger.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS_SYNTH) -MMD -MP -c $< -o $@
 
 # Run
 run: $(TARGET)

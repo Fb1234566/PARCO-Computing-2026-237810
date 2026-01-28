@@ -17,7 +17,7 @@ void readMatrixCOO(const char* path, COOMatrix* m){
     // parse the comments for the dimensions of the matrix
     char *line = NULL;
     size_t len = 0;
-    ssize_t nread;
+    size_t nread;
 	COOEntry* cooList = NULL;
 
     while ((nread = getline(&line, &len, f)) != -1) {
