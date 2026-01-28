@@ -47,7 +47,7 @@ for mpi_size in "${MPI_SIZES[@]}"; do
     cols=$((1000 * mpi_size))
     nnz=$((5000 * mpi_size))
     echo "Generating matrix for MPI_SIZE=$mpi_size (${rows}x${cols}, nnz=${nnz})"
-    ./bin/create_synthetic_matrices "$rows" "$cols" "$nnz"
+    .././bin/create_synthetic_matrices "$rows" "$cols" "$nnz"
 done
 echo "Synthetic matrices generated successfully."
 cd ..
