@@ -64,7 +64,7 @@ for f in "$DATA_DIR"/*.mtx; do
     mkdir -p "$output_dir"
     mkdir -p "$graph_dir"
 
-    qsub -v MATRIX="$abs_path",OUTPUT_DIR="$output_dir",GRAPH_DIR="$graph_dir",MPI_SIZES="${MPI_SIZES[*]}" Run.pbs
+    qsub -v MATRIX="$abs_path",OUTPUT_DIR="$output_dir",GRAPH_DIR="$graph_dir",MPI_SIZES="${MPI_SIZES[*]}" Run_MPI.pbs
     echo "Submitted job for $matrix_name with all MPI_SIZES"
   fi
 done
