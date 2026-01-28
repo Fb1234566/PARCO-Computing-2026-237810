@@ -225,7 +225,8 @@ int main(int argc, char **argv) {
         CSRHeader myhdr;
         int* csrPtr, *csrCol;
         double* csrVal;
-        MPI_Scatter(headers, 1, csr_header_type,
+        MPI_Scatter(headers,         if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
+1, csr_header_type,
                         &myhdr,  1, csr_header_type,
                         0, MPI_COMM_WORLD);
 
@@ -262,7 +263,18 @@ int main(int argc, char **argv) {
 		end = MPI_Wtime();
         LOG_INFO("Computation for rank %d done\n", world_rank);
 		double diff = end - start;
-        MPI_Gatherv(res.val, res.len, MPI_DOUBLE, resVector.val, reciveCountsResV, dispResV, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		double* gather_buffer = NULL;
+		int* gather_counts = NULL;
+		int* gather_displs = NULL;
+
+		if (world_rank == 0) {
+    		resVector.val = calloc(c1.rows, sizeof(double));
+    		gather_buffer = resVector.val;
+    		gather_counts = reciveCountsResV;
+    		gather_displs = dispResV;
+		}
+
+		MPI_Gatherv(res.val, res.len, MPI_DOUBLE, gather_buffer, gather_counts, gather_displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Reduce(&diff, &computeTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
         free(m.rowPtr);
         free(m.col);
