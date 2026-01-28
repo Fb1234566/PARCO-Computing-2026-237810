@@ -353,7 +353,7 @@ int main(int argc, char **argv) {
 
             /* Initialize values for one row */
             Values v;
-            v.len = 3;
+            v.len = 4;
             v.value = malloc(sizeof(double) * v.len);
             if (!v.value) { perror("malloc"); return 1; }
             v.value[0] = computeTime;      /* Time */
