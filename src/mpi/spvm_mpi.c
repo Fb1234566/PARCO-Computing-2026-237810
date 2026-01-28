@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
             } else if (strcmp(argv[i], "--nprocs") == 0 && i + 1 < argc) {
                 nprocs = atoi(argv[++i]);
             }
-
         }
 
         // Create the data type to be sent via csr
@@ -105,7 +104,7 @@ int main(int argc, char **argv) {
         double* bufVal;
         Vector resVector;
 		resVector.len = 0;
-		resVector.val = NULL;
+		resVector.val = NULL;fix error
         int sendCountsOther[world_size];
         int sendCountsV[world_size];
         int sendCountsPtr[world_size];
@@ -121,9 +120,9 @@ int main(int argc, char **argv) {
                 return 1;
         }
 
-        LOG_INFO("=== Program start ===");
 
         if (world_rank == 0){
+                LOG_INFO("[RANK 0] Start with %d processes", world_size);
                 CSRMatrix mComplete;
                 procMatrices = malloc(sizeof(CSRMatrix)*world_size);
                 headers = malloc(sizeof(CSRHeader)*world_size);
@@ -132,25 +131,21 @@ int main(int argc, char **argv) {
                 setRandSeed();
 
                 if (strcmp(matrix_type, "synthetic") == 0) {
-                    LOG_INFO("Generating synthetic matrix: %dx%d with %d NNZ", syn_rows, syn_cols, syn_nnz);
+                    LOG_INFO("[RANK 0] Matrix: synthetic %dx%d, nnz=%d", syn_rows, syn_cols, syn_nnz);
                     randomInitCOO(&c1, syn_rows, syn_cols, world_size, syn_nnz);
                 } else {
-                    LOG_INFO("Reading matrix from file: %s", file_path);
+                    LOG_INFO("[RANK 0] Matrix: file %s", file_path);
                     readMatrixCOO(file_path, &c1);
                 }
 
-                // Init the vector
                 initVector(&vector, c1.cols);
 
-                LOG_INFO("Computing correct result\n");
-                // Compute correct result
+                LOG_INFO("[RANK 0] Computing serial reference for %dx%d matrix", c1.rows, c1.cols);
                 serialRes.len = c1.rows;
                 serialRes.val = calloc(c1.rows, sizeof(double));
                 COOToCSR(&c1, &mComplete);
                 computeSpvmSerial(&mComplete, &vector, &serialRes);
-                LOG_INFO("Computation done\n");
 
-                // init the buffers
                 bufCol = calloc(c1.nnz, sizeof(int));
                 bufPtr = calloc(c1.rows+1, sizeof(int));
                 bufVal = calloc(c1.nnz, sizeof(double));
@@ -171,7 +166,7 @@ int main(int argc, char **argv) {
                         } else {
                                 dispResV[i] = dispResV[i-1]+headers[i-1].rows;
                         }
-						reciveCountsResV[i] = headers[i].rows;
+                        reciveCountsResV[i] = headers[i].rows;
                 }
 
                 // Split the matrix into parts and convert them to CSR
@@ -181,7 +176,6 @@ int main(int argc, char **argv) {
                         free(cooMatrices[i].col);
                         free(cooMatrices[i].val);
                 }
-
 
                 free(cooMatrices);
                 int offsetOther = 0;
@@ -219,19 +213,14 @@ int main(int argc, char **argv) {
                                                 (size_t)sendCountsPtr[i] * sizeof(bufPtr[0])); /* bytes */
                         }
                 }
+                LOG_INFO("[RANK 0] Distributing matrix blocks to %d ranks", world_size);
         }
 
         // send the previously compiled headers
         CSRHeader myhdr;
         int* csrPtr, *csrCol;
         double* csrVal;
-        MPI_Scatter(headers,
-1, csr_header_type,
-                        &myhdr,  1, csr_header_type,
-                        0, MPI_COMM_WORLD);
-
-        LOG_INFO("rank %d got header: rows=%d cols=%d nnz=%d\n",
-                        world_rank, myhdr.rows, myhdr.cols, myhdr.nnz);
+        MPI_Scatter(headers, 1, csr_header_type, &myhdr,  1, csr_header_type, 0, MPI_COMM_WORLD);
 
         CSRMatrix m;
         Vector v;
@@ -254,18 +243,21 @@ int main(int argc, char **argv) {
         MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
         MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-		double start, end;
-        // Computation
-        LOG_INFO("Computing result for rank %d\n", world_rank);
+
+        LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
+
+        double start, end;
         MPI_Barrier(MPI_COMM_WORLD);
-		start = MPI_Wtime();
-		computeSpvmSerial(&m, &v, &res);
-		end = MPI_Wtime();
-        LOG_INFO("Computation for rank %d done\n", world_rank);
-		double diff = end - start;
-		double* gather_buffer = NULL;
-		int* gather_counts = NULL;
-		int* gather_displs = NULL;
+        start = MPI_Wtime();
+        computeSpvmSerial(&m, &v, &res);
+        end = MPI_Wtime();
+
+        double diff = end - start;
+        LOG_INFO("[RANK %d] Computation completed in %.6f seconds", world_rank, diff);
+
+        double* gather_buffer = NULL;
+        int* gather_counts = NULL;
+        int* gather_displs = NULL;
 
 		if (world_rank == 0) {
     		resVector.val = calloc(c1.rows, sizeof(double));
@@ -289,22 +281,19 @@ int main(int argc, char **argv) {
 				bool status = false;
 
                 for(row=0; row<c1.rows; row++){
-
                         if (currRank + 1 < world_size && row >= dispResV[currRank + 1]){
                                 currRank++;
                                 localIdx = 0;
                         }
-
                         finalRes.val[currRank+localIdx*world_size] = resVector.val[row];
                         localIdx++;
                 }
-
 
                 if (compareVectors(&finalRes, &serialRes)){
                     LOG_INFO("Result is correct");
 					status = true;
                 } else {
-                    LOG_ERROR("Result is incorrect");
+                    LOG_ERROR("[RANK 0] Verification: FAILED");
                 }
 
 				free(c1.row);
@@ -326,7 +315,6 @@ int main(int argc, char **argv) {
                 free(vector.val);
                 free(resVector.val);
                 free(finalRes.val);
-                Header h1;
 
             /* Initialize header with 3 columns */
             Header h;
@@ -389,8 +377,7 @@ int main(int argc, char **argv) {
             free(v.value);
             if (allocated_path) free(final_export_path);
 
-            printf("Wrote header and one row to %s\n", final_export_path == export_path ? export_path : final_export_path);
-            return 0;
+                LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
         }
 
         MPI_Finalize();                     // Clean up MPI
