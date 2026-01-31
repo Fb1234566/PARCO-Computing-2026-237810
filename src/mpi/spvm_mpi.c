@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
         double start, end;
         MPI_Barrier(MPI_COMM_WORLD);
         start = MPI_Wtime();
-        computeSpvmSerial(&m, &v, &res);
+        computeSpvmSerial(&m, &vector, &res);
         end = MPI_Wtime();
 
         double diff = end - start;
