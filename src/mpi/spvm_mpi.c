@@ -103,18 +103,28 @@ int main(int argc, char **argv) {
 		vector.val = NULL;
         int* bufPtr = NULL;
         int* bufCol = NULL;
-        double* bufVal;
+        double* bufVal = NULL;
         Vector resVector;
 		resVector.len = 0;
 		resVector.val = NULL;
-        int sendCountsOther[world_size];
-        int sendCountsV[world_size];
-        int sendCountsPtr[world_size];
-        int dispPtr[world_size];
-        int dispOther[world_size];
-        int dispV[world_size];
-        int dispResV[world_size];
-		int reciveCountsResV[world_size];
+		int* sendCountsOther = malloc(world_size * sizeof(int));
+		int* sendCountsV = malloc(world_size * sizeof(int));
+		int* sendCountsPtr = malloc(world_size * sizeof(int));
+		int* dispPtr = malloc(world_size * sizeof(int));
+		int* dispOther = malloc(world_size * sizeof(int));
+		int* dispV = malloc(world_size * sizeof(int));
+		int* dispResV = malloc(world_size * sizeof(int));
+		int* reciveCountsResV = malloc(world_size * sizeof(int));
+
+
+		memset(sendCountsOther, 0, world_size * sizeof(int));
+		memset(sendCountsV, 0, world_size * sizeof(int));
+		memset(sendCountsPtr, 0, world_size * sizeof(int));
+		memset(dispPtr, 0, world_size * sizeof(int));
+		memset(dispOther, 0, world_size * sizeof(int));
+		memset(dispV, 0, world_size * sizeof(int));
+		memset(dispResV, 0, world_size * sizeof(int));
+		memset(reciveCountsResV, 0, world_size * sizeof(int));
 
         // Start logger
         if (logger_init("app.log", LOG_LEVEL_INFO) != 0) {
@@ -380,6 +390,16 @@ int main(int argc, char **argv) {
 
                 LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
         }
+
+		free(sendCountsOther);
+		free(sendCountsV);
+		free(sendCountsPtr);
+		free(dispPtr);
+		free(dispOther);
+		free(dispV);
+		free(dispResV);
+		free(reciveCountsResV);
+
 
         MPI_Finalize();                     // Clean up MPI
         return 0;
