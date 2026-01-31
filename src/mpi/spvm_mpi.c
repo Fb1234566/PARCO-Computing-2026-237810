@@ -50,11 +50,11 @@ int create_csr_header_type(MPI_Datatype *out_type) {
 }
 
 int main(int argc, char **argv) {
-        MPI_Init(&argc, &argv);                     // Initialize MPI
+        MPI_Init(&argc, &argv);
 
         int world_size, world_rank;
-        MPI_Comm_size(MPI_COMM_WORLD, &world_size);// number of processes
-        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);// this process' rank
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
         // --- Argument Parsing Defaults ---
         char *matrix_type = "file";
@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
         int syn_nnz = 5000;
 		int iteration = 0;
 		int nprocs = -1;
+
         // Simple manual parsing
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--help") == 0) {
@@ -107,6 +108,8 @@ int main(int argc, char **argv) {
         Vector resVector;
 		resVector.len = 0;
 		resVector.val = NULL;
+
+        // Dynamically allocate arrays to avoid stack overflow with large world_size
 		int* sendCountsOther = malloc(world_size * sizeof(int));
 		int* sendCountsV = malloc(world_size * sizeof(int));
 		int* sendCountsPtr = malloc(world_size * sizeof(int));
@@ -116,7 +119,7 @@ int main(int argc, char **argv) {
 		int* dispResV = malloc(world_size * sizeof(int));
 		int* reciveCountsResV = malloc(world_size * sizeof(int));
 
-
+		// Initialize to zero on all ranks
 		memset(sendCountsOther, 0, world_size * sizeof(int));
 		memset(sendCountsV, 0, world_size * sizeof(int));
 		memset(sendCountsPtr, 0, world_size * sizeof(int));
@@ -131,7 +134,6 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Unable to initialize logger\n");
                 return 1;
         }
-
 
         if (world_rank == 0){
                 LOG_INFO("[RANK 0] Start with %d processes", world_size);
@@ -192,7 +194,8 @@ int main(int argc, char **argv) {
                 free(cooMatrices);
                 int offsetOther = 0;
                 int offsetPtr = 0;
-                //  Prepare the buffers, send counts and offsets in order to send the data vai scatterv
+
+                // Prepare the buffers, send counts and offsets in order to send the data via scatterv
                 for(i=0; i<world_size; i++){
                         sendCountsOther[i] = procMatrices[i].nnz;
                         dispOther[i] = offsetOther;
@@ -207,28 +210,26 @@ int main(int argc, char **argv) {
 
                         // Column index
                         if (sendCountsOther[i] > 0 && procMatrices[i].col != NULL) {
-                                memcpy(bufCol + dispOther[i],                 /* dest (int*) */
-                                                procMatrices[i].col,                     /* src (int*) */
-                                                (size_t)sendCountsOther[i] * sizeof(bufCol[0])); /* bytes */
+                                memcpy(bufCol + dispOther[i], procMatrices[i].col,
+                                       (size_t)sendCountsOther[i] * sizeof(bufCol[0]));
                         }
 
                         // Values
                         if (sendCountsOther[i] > 0 && procMatrices[i].val != NULL) {
-                                memcpy(bufVal + dispOther[i],                 /* dest (int*) */
-                                                procMatrices[i].val,                     /* src (int*) */
-                                                (size_t)sendCountsOther[i] * sizeof(bufVal[0])); /* bytes */
+                                memcpy(bufVal + dispOther[i], procMatrices[i].val,
+                                       (size_t)sendCountsOther[i] * sizeof(bufVal[0]));
                         }
-                        // Values
+
+                        // Row pointers
                         if (sendCountsPtr[i] > 0 && procMatrices[i].rowPtr != NULL) {
-                                memcpy(bufPtr + dispPtr[i],                 /* dest (int*) */
-                                                procMatrices[i].rowPtr,                     /* src (int*) */
-                                                (size_t)sendCountsPtr[i] * sizeof(bufPtr[0])); /* bytes */
+                                memcpy(bufPtr + dispPtr[i], procMatrices[i].rowPtr,
+                                       (size_t)sendCountsPtr[i] * sizeof(bufPtr[0]));
                         }
                 }
                 LOG_INFO("[RANK 0] Distributing matrix blocks to %d ranks", world_size);
         }
 
-        // send the previously compiled headers
+        // Send the previously compiled headers
         CSRHeader myhdr;
         MPI_Scatter(headers, 1, csr_header_type, &myhdr, 1, csr_header_type, 0, MPI_COMM_WORLD);
 
@@ -245,7 +246,7 @@ int main(int argc, char **argv) {
         }
         MPI_Bcast(&vec_len, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        // Allocate vector on non-root ranks
+        // Allocate vector on non-root ranks (ensure minimum size 1)
         if (world_rank != 0) {
             vector.len = vec_len;
             vector.val = malloc(sizeof(double) * ((vec_len > 0) ? vec_len : 1));
@@ -263,6 +264,7 @@ int main(int argc, char **argv) {
         MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0, MPI_COMM_WORLD);
 
+        // Broadcast the full vector to all ranks
         MPI_Bcast(vector.val, vec_len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
@@ -301,8 +303,6 @@ int main(int argc, char **argv) {
         if (world_rank == 0){
                 bool status = false;
 
-                LOG_INFO("[RANK 0] Starting result reconstruction");
-
                 // Reconstruct the result in original row order
                 for (int rank = 0; rank < world_size; rank++) {
                     int startIdx = dispResV[rank];
@@ -310,13 +310,11 @@ int main(int argc, char **argv) {
 
                     for (int j = 0; j < count; j++) {
                         int originalRow = rank + j * world_size;
-                        if (originalRow < c1.rows) {  // Safety check
+                        if (originalRow < c1.rows) {
                             finalRes.val[originalRow] = resVector.val[startIdx + j];
                         }
                     }
                 }
-
-                LOG_INFO("[RANK 0] Comparing results");
 
                 if (compareVectors(&finalRes, &serialRes)){
                     LOG_INFO("Result is correct");
@@ -325,15 +323,10 @@ int main(int argc, char **argv) {
                     LOG_ERROR("[RANK 0] Verification: FAILED");
                 }
 
-                LOG_INFO("[RANK 0] Starting cleanup phase");
-
 				free(c1.row);
 				free(c1.col);
 				free(c1.val);
-                LOG_INFO("[RANK 0] Freed c1 matrices");
-
 				free(serialRes.val);
-                LOG_INFO("[RANK 0] Freed serial result");
 
                 for(int i = 0; i < world_size; i++){
                         free(procMatrices[i].rowPtr);
@@ -341,28 +334,15 @@ int main(int argc, char **argv) {
                         free(procMatrices[i].val);
                 }
                 free(procMatrices);
-                LOG_INFO("[RANK 0] Freed process matrices");
-				LOG_INFO("[RANK 0] Freeing bufCol");
-				free(bufCol);
-				LOG_INFO("[RANK 0] Freeing bufPtr");
-				free(bufPtr);
-				LOG_INFO("[RANK 0] Freeing bufVal");
-				//free(bufVal);
-				LOG_INFO("[RANK 0] Freeing headers");
-				free(headers);
-				LOG_INFO("[RANK 0] Freed communication buffers");
+
+                free(bufCol);
+                free(bufPtr);
+                free(headers);
                 free(vector.val);
-                LOG_INFO("[RANK 0] Freed vector");
-
                 free(resVector.val);
-                LOG_INFO("[RANK 0] Freed result vector");
-
                 free(finalRes.val);
-                LOG_INFO("[RANK 0] Freed final result");
 
-                LOG_INFO("[RANK 0] Starting CSV export");
-
-            /* Initialize header with 3 columns */
+            /* Initialize header with 4 columns */
             Header h;
             h.count = 4;
             h.s = malloc(sizeof(char*) * h.count);
@@ -372,23 +352,15 @@ int main(int argc, char **argv) {
             h.s[2] = strdup("Status");
 			h.s[3] = strdup("NProc");
 
-            LOG_INFO("[RANK 0] Initialized CSV header");
-
-            /* If export_path is a directory, build a file path inside it with the format:
-               stats_mpi_SpMV_<sanitized>.csv
-               where <sanitized> is either the sanitized file path (slashes -> underscores)
-               or a synthetic description like synthetic_<rows>x<cols>_<nnz>.
-            */
+            /* If export_path is a directory, build a file path inside it */
             char *final_export_path = export_path;
             bool allocated_path = false;
             struct stat st;
             if (stat(export_path, &st) == 0 && S_ISDIR(st.st_mode)) {
-                LOG_INFO("[RANK 0] Export path is directory, building filename");
                 char sanitized[512];
                 if (strcmp(matrix_type, "synthetic") == 0) {
                     snprintf(sanitized, sizeof(sanitized), "synthetic_%dx%d_%d", syn_rows, syn_cols, syn_nnz);
                 } else {
-                    /* Copy file_path and replace '/' with '_' */
                     snprintf(sanitized, sizeof(sanitized), "%s", file_path);
                     for (char *p = sanitized; *p; ++p) if (*p == '/') *p = '_';
                 }
@@ -401,10 +373,8 @@ int main(int argc, char **argv) {
                 } else {
                     snprintf(final_export_path, need, "%s/stats_mpi_SpMV_%s.csv", export_path, sanitized);
                 }
-                LOG_INFO("[RANK 0] Final export path: %s", final_export_path);
             }
 
-            LOG_INFO("[RANK 0] Calling appendToCSV for header");
             appendToCSV(&h, NULL, final_export_path);
 
             /* Initialize values for one row */
@@ -412,16 +382,13 @@ int main(int argc, char **argv) {
             v.len = 4;
             v.value = malloc(sizeof(double) * v.len);
             if (!v.value) { perror("malloc"); return 1; }
-            v.value[0] = computeTime;      /* Time */
-            v.value[1] = iteration;     /* Iteration */
-            v.value[2] = status;      /* Status as numeric */
-			v.value[3] = nprocs;	/* number of processros */
+            v.value[0] = computeTime;
+            v.value[1] = iteration;
+            v.value[2] = status;
+			v.value[3] = nprocs;
 
-            LOG_INFO("[RANK 0] Calling appendToCSV for values");
-            /* Append the values row */
             appendToCSV(NULL, &v, final_export_path);
 
-            LOG_INFO("[RANK 0] Freeing CSV structures");
             /* Free allocated memory */
             for (int i = 0; i < h.count; ++i) free(h.s[i]);
             free(h.s);
@@ -431,7 +398,7 @@ int main(int argc, char **argv) {
             LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
         }
 
-        LOG_INFO("[RANK %d] Freeing dynamically allocated arrays", world_rank);
+        // Free dynamically allocated arrays (ALL RANKS)
         free(sendCountsOther);
         free(sendCountsV);
         free(sendCountsPtr);
@@ -441,8 +408,6 @@ int main(int argc, char **argv) {
         free(dispResV);
         free(reciveCountsResV);
 
-        LOG_INFO("[RANK %d] Calling MPI_Finalize", world_rank);
-        MPI_Finalize();                     // Clean up MPI
-        LOG_INFO("[RANK %d] Exiting main", world_rank);
+        MPI_Finalize();
         return 0;
 }
