@@ -298,19 +298,22 @@ int main(int argc, char **argv) {
         free(res.val);
 
         if (world_rank == 0){
-                int row;
-                int currRank = 0;
-                int localIdx = 0;
-				bool status = false;
+            int row;
+            int currRank = 0;
+            int localIdx = 0;
+			bool status = false;
 
-                for(row=0; row<c1.rows; row++){
-                        if (currRank + 1 < world_size && row >= dispResV[currRank + 1]){
-                                currRank++;
-                                localIdx = 0;
-                        }
-                        finalRes.val[currRank+localIdx*world_size] = resVector.val[row];
-                        localIdx++;
-                }
+		for (int rank = 0; rank < world_size; rank++) {
+    		int startIdx = dispResV[rank];
+    		int count = reciveCountsResV[rank];
+
+    		for (int j = 0; j < count; j++) {
+        		int originalRow = rank + j * world_size;
+        		if (originalRow < c1.rows) {  // Safety check
+            		finalRes.val[originalRow] = resVector.val[startIdx + j];
+        		}
+    		}
+		}
 
                 if (compareVectors(&finalRes, &serialRes)){
                     LOG_INFO("Result is correct");
