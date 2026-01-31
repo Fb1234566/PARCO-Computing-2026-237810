@@ -347,9 +347,9 @@ int main(int argc, char **argv) {
 				LOG_INFO("[RANK 0] Freeing bufPtr");
 				free(bufPtr);
 				LOG_INFO("[RANK 0] Freeing bufVal");
-				free(bufVal);
+				//free(bufVal);
 				LOG_INFO("[RANK 0] Freeing headers");
-				// free(headers);
+				free(headers);
 				LOG_INFO("[RANK 0] Freed communication buffers");
                 free(vector.val);
                 LOG_INFO("[RANK 0] Freed vector");
