@@ -225,15 +225,15 @@ int main(int argc, char **argv) {
         MPI_Scatter(headers, 1, csr_header_type, &myhdr,  1, csr_header_type, 0, MPI_COMM_WORLD);
 
         CSRMatrix m;
-        Vector v;
         Vector res;
         m.rows = myhdr.rows;
         m.cols = myhdr.cols;
         m.nnz = myhdr.nnz;
 
-        v.len = m.cols;
-        v.val = malloc(sizeof(double)*m.cols);
-
+		if (world_rank != 0){
+			vector.len = m.cols;
+			vector.val = calloc(m.cols, sizeof(double));
+		}
         res.len = m.rows;
         res.val = calloc(m.rows, sizeof(double));
 
@@ -244,8 +244,9 @@ int main(int argc, char **argv) {
         MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0,  MPI_COMM_WORLD);
         MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
-        MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-
+        // MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
+		MPI_Bcast(vector.val, vector.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		printVector(&vector);
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
 
         double start, end;
