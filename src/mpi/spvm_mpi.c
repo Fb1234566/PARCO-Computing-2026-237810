@@ -99,8 +99,10 @@ int main(int argc, char **argv) {
         CSRHeader* headers = NULL;
         CSRMatrix* procMatrices = NULL;
         Vector vector, finalRes, serialRes;
-        int* bufPtr;
-        int* bufCol;
+		vector.len = 0;
+		vector.val = NULL;
+        int* bufPtr = NULL;
+        int* bufCol = NULL;
         double* bufVal;
         Vector resVector;
 		resVector.len = 0;
