@@ -230,9 +230,7 @@ int main(int argc, char **argv) {
 
         // send the previously compiled headers
         CSRHeader myhdr;
-        int* csrPtr, *csrCol;
-        double* csrVal;
-        MPI_Scatter(headers, 1, csr_header_type, &myhdr,  1, csr_header_type, 0, MPI_COMM_WORLD);
+        MPI_Scatter(headers, 1, csr_header_type, &myhdr, 1, csr_header_type, 0, MPI_COMM_WORLD);
 
         CSRMatrix m;
         Vector res;
@@ -240,10 +238,19 @@ int main(int argc, char **argv) {
         m.cols = myhdr.cols;
         m.nnz = myhdr.nnz;
 
-		if (world_rank != 0){
-			vector.len = m.cols;
-			vector.val = calloc(m.cols, sizeof(double));
-		}
+        // Broadcast vector length first
+        int vec_len;
+        if (world_rank == 0) {
+            vec_len = vector.len;
+        }
+        MPI_Bcast(&vec_len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // Allocate vector on non-root ranks
+        if (world_rank != 0) {
+            vector.len = vec_len;
+            vector.val = malloc(sizeof(double) * vec_len);
+        }
+
         res.len = m.rows;
         res.val = calloc(m.rows, sizeof(double));
 
@@ -251,11 +258,12 @@ int main(int argc, char **argv) {
         m.col = malloc(sizeof(int)*m.nnz);
         m.val = malloc(sizeof(double)*m.nnz);
 
-        MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0,  MPI_COMM_WORLD);
-        MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-        MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
-        // MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
-		MPI_Bcast(vector.val, vector.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        MPI_Bcast(vector.val, vec_len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
 
         double start, end;
@@ -280,10 +288,13 @@ int main(int argc, char **argv) {
 
 		MPI_Gatherv(res.val, res.len, MPI_DOUBLE, gather_buffer, gather_counts, gather_displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Reduce(&diff, &computeTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
         free(m.rowPtr);
         free(m.col);
         free(m.val);
-        free(vector.val);
+        if (world_rank != 0) {
+            free(vector.val);
+        }
         free(res.val);
 
         if (world_rank == 0){
@@ -324,6 +335,7 @@ int main(int argc, char **argv) {
                 free(bufPtr);
                 free(bufVal);
                 free(headers);
+                free(vector.val);
                 free(resVector.val);
                 free(finalRes.val);
 
@@ -388,7 +400,7 @@ int main(int argc, char **argv) {
             free(v.value);
             if (allocated_path) free(final_export_path);
 
-                LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
+            LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
         }
 
 		free(sendCountsOther);
@@ -399,7 +411,6 @@ int main(int argc, char **argv) {
 		free(dispV);
 		free(dispResV);
 		free(reciveCountsResV);
-
 
         MPI_Finalize();                     // Clean up MPI
         return 0;
