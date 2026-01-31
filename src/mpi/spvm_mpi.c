@@ -246,7 +246,6 @@ int main(int argc, char **argv) {
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0,  MPI_COMM_WORLD);
         // MPI_Scatterv(vector.val, sendCountsV, dispV, MPI_DOUBLE, v.val, v.len, MPI_DOUBLE, 0,  MPI_COMM_WORLD);
 		MPI_Bcast(vector.val, vector.len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		printVector(&vector);
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
 
         double start, end;
