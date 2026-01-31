@@ -153,6 +153,8 @@ int main(int argc, char **argv) {
                 }
 
                 initVector(&vector, c1.cols);
+				LOG_INFO("[RANK 0] Vector initialized, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
+        			vector.val[0], vector.val[1], vector.val[2], vector.val[3], vector.val[4]);
 
                 LOG_INFO("[RANK 0] Computing serial reference for %dx%d matrix", c1.rows, c1.cols);
                 serialRes.len = c1.rows;
@@ -266,6 +268,8 @@ int main(int argc, char **argv) {
 
         // Broadcast the full vector to all ranks
         MPI_Bcast(vector.val, vec_len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		LOG_INFO("[RANK %d] Vector received, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
+        	world_rank, vector.val[0], vector.val[1], vector.val[2], vector.val[3], vector.val[4]);
 
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
 

@@ -192,7 +192,7 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
         do {
             elem.row = currRow%rows;
             elem.col = generateRandInt(0, cols - 1);
-            elem.val = generateRandDouble(-10000.0, 10000.0);
+            elem.val = generateRandDouble(-100.0, 100.0);
         } while (checkIfValueIsAlreadyPresent(elements, &elem, insertedNNZ));
         elements[insertedNNZ] = elem;
 		insertedNNZ++;
@@ -343,7 +343,7 @@ void initVector(Vector* v, int len){
 	v->val = calloc(len, sizeof(double));
 	int i;
 	for(i=0; i<len; i++){
-		v->val[i] = generateRandDouble(-10000.0, 10000.0);
+		v->val[i] = generateRandDouble(-100.0, 100.0);
 	}
 }
 
