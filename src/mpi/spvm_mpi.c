@@ -314,7 +314,6 @@ int main(int argc, char **argv) {
                 free(bufPtr);
                 free(bufVal);
                 free(headers);
-                free(vector.val);
                 free(resVector.val);
                 free(finalRes.val);
 
