@@ -321,6 +321,15 @@ int main(int argc, char **argv) {
 					status = true;
                 } else {
                     LOG_ERROR("[RANK 0] Verification: FAILED");
+					    // Show first few mismatches
+    				int mismatch_count = 0;
+    				for (int i = 0; i < c1.rows && mismatch_count < 10; i++) {
+        				if (finalRes.val[i] != serialRes.val[i]) {
+            				LOG_ERROR("[RANK 0] Mismatch at row %d: got %.10f, expected %.10f",
+                      		i, finalRes.val[i], serialRes.val[i]);
+            				mismatch_count++;
+        				}
+    				}
                 }
 
 				free(c1.row);
