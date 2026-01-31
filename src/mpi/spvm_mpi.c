@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
         free(m.rowPtr);
         free(m.col);
         free(m.val);
-        free(v.val);
+        free(vector.val);
         free(res.val);
 
         if (world_rank == 0){
