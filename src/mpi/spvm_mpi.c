@@ -342,13 +342,15 @@ int main(int argc, char **argv) {
                 }
                 free(procMatrices);
                 LOG_INFO("[RANK 0] Freed process matrices");
-
-                free(bufCol);
-                free(bufPtr);
-                free(bufVal);
-                free(headers);
-                LOG_INFO("[RANK 0] Freed communication buffers");
-
+				LOG_INFO("[RANK 0] Freeing bufCol");
+				free(bufCol);
+				LOG_INFO("[RANK 0] Freeing bufPtr");
+				free(bufPtr);
+				LOG_INFO("[RANK 0] Freeing bufVal");
+				free(bufVal);
+				LOG_INFO("[RANK 0] Freeing headers");
+				free(headers);
+				LOG_INFO("[RANK 0] Freed communication buffers");
                 free(vector.val);
                 LOG_INFO("[RANK 0] Freed vector");
 
