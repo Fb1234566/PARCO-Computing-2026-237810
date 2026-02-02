@@ -421,7 +421,7 @@ int main(int argc, char **argv) {
             v.value[0] = computeTime;
             v.value[1] = iteration;
             v.value[2] = status;
-			v.value[3] = nprocs;
+			v.value[3] = world_size;
 
             appendToCSV(NULL, &v, final_export_path);
 
