@@ -14,6 +14,9 @@ if ! command -v mpicc >/dev/null 2>&1; then
     exit 1
 fi
 
+MPI_SIZES=(1 2 4 8 16 32 64 128 256)
+
+
 # Build MPI target and synthetic matrix generator
 make clean
 make mpi
