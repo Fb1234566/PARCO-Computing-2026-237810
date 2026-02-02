@@ -165,6 +165,8 @@ int main(int argc, char **argv) {
                 bufCol = calloc(c1.nnz, sizeof(int));
                 bufPtr = calloc(c1.rows+1, sizeof(int));
                 bufVal = calloc(c1.nnz, sizeof(double));
+                LOG_INFO("[RANK 0] Allocated buffers: bufCol=%p, bufPtr=%p, bufVal=%p (size=%d)",
+                        (void*)bufCol, (void*)bufPtr, (void*)bufVal, c1.nnz);
                 resVector.len = c1.rows;
                 resVector.val = calloc(c1.rows, sizeof(double));
                 finalRes.len = c1.rows;
@@ -215,6 +217,8 @@ int main(int argc, char **argv) {
 
                         // Log before copying for rank 0
                         if (i == 0) {
+                                LOG_INFO("[RANK 0] BEFORE memcpy: procMatrices[0].val=%p, bufVal=%p, dispOther[0]=%d",
+                                        (void*)procMatrices[0].val, (void*)bufVal, dispOther[0]);
                                 LOG_INFO("[RANK 0] BEFORE memcpy: procMatrices[0] has nnz=%d, first 5 vals: %.6f, %.6f, %.6f, %.6f, %.6f",
                                         procMatrices[0].nnz,
                                         procMatrices[0].nnz > 0 ? procMatrices[0].val[0] : 0.0,
@@ -253,6 +257,14 @@ int main(int argc, char **argv) {
                                         sendCountsOther[0] > 4 ? bufVal[dispOther[0] + 4] : 0.0);
                         }
                 }
+
+                // Verify bufVal is still valid after memcpy loop
+                LOG_INFO("[RANK 0] AFTER FULL LOOP: bufVal[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
+                        bufVal[0], bufVal[1], bufVal[2], bufVal[3], bufVal[4]);
+                LOG_INFO("[RANK 0] AFTER FULL LOOP: procMatrices[0].val[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
+                        procMatrices[0].val[0], procMatrices[0].val[1], procMatrices[0].val[2],
+                        procMatrices[0].val[3], procMatrices[0].val[4]);
+
                 LOG_INFO("[RANK 0] Distributing matrix blocks to %d ranks", world_size);
         }
 
