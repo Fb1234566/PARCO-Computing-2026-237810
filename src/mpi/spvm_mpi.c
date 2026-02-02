@@ -104,10 +104,6 @@ int main(int argc, char **argv) {
 		resVector.len = 0;
 		resVector.val = NULL;
 
-		// Backup pointers for c1 to safely free them later
-		int* c1_row_backup = NULL;
-		int* c1_col_backup = NULL;
-		double* c1_val_backup = NULL;
 
         // Dynamically allocate arrays to avoid stack overflow with large world_size
 		int* sendCountsOther = malloc(world_size * sizeof(int));
@@ -173,11 +169,6 @@ int main(int argc, char **argv) {
                 resVector.val = calloc(c1.rows, sizeof(double));
                 finalRes.len = c1.rows;
                 finalRes.val = calloc(c1.rows, sizeof(double));
-
-                // Save c1 pointers before splitCOOMatrix in case they get corrupted
-                int* c1_row_backup = c1.row;
-                int* c1_col_backup = c1.col;
-                double* c1_val_backup = c1.val;
 
                 splitCOOMatrix(&c1, cooMatrices, world_size);
 				LOG_INFO("[RANK 0] MATRIX 0, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
@@ -363,78 +354,42 @@ int main(int argc, char **argv) {
     				}
                 }
 
-				LOG_INFO("[RANK 0] DEBUG: About to free c1 arrays using backup pointers: row=%p, col=%p, val=%p",
-						(void*)c1_row_backup, (void*)c1_col_backup, (void*)c1_val_backup);
-				free(c1_row_backup);
-				LOG_INFO("[RANK 0] DEBUG: Freed c1.row");
-				free(c1_col_backup);
-				LOG_INFO("[RANK 0] DEBUG: Freed c1.col");
-				free(c1_val_backup);
-				LOG_INFO("[RANK 0] DEBUG: Freed c1.val");
-
-				LOG_INFO("[RANK 0] DEBUG: About to free serialRes.val=%p", (void*)serialRes.val);
+				free(c1.row);
+				free(c1.col);
+				free(c1.val);
 				free(serialRes.val);
-				LOG_INFO("[RANK 0] DEBUG: Freed serialRes.val");
 
-                LOG_INFO("[RANK 0] DEBUG: About to free procMatrices arrays for %d ranks", world_size);
                 for(int i = 0; i < world_size; i++){
-                        LOG_INFO("[RANK 0] DEBUG: Freeing procMatrices[%d]: rowPtr=%p, col=%p, val=%p",
-                                i, (void*)procMatrices[i].rowPtr, (void*)procMatrices[i].col, (void*)procMatrices[i].val);
                         free(procMatrices[i].rowPtr);
                         free(procMatrices[i].col);
                         free(procMatrices[i].val);
-                        LOG_INFO("[RANK 0] DEBUG: Freed procMatrices[%d]", i);
                 }
-                LOG_INFO("[RANK 0] DEBUG: About to free procMatrices array itself=%p", (void*)procMatrices);
                 free(procMatrices);
-                LOG_INFO("[RANK 0] DEBUG: Freed procMatrices");
 
-                LOG_INFO("[RANK 0] DEBUG: About to free buffers: bufCol=%p, bufPtr=%p, bufVal=%p",
-                        (void*)bufCol, (void*)bufPtr, (void*)bufVal);
                 free(bufCol);
-                LOG_INFO("[RANK 0] DEBUG: Freed bufCol");
                 free(bufPtr);
-                LOG_INFO("[RANK 0] DEBUG: Freed bufPtr");
 				free(bufVal);
-                LOG_INFO("[RANK 0] DEBUG: Freed bufVal");
-
-                LOG_INFO("[RANK 0] DEBUG: About to free headers=%p", (void*)headers);
                 free(headers);
-                LOG_INFO("[RANK 0] DEBUG: Freed headers");
-
-                LOG_INFO("[RANK 0] DEBUG: About to free vector.val=%p", (void*)vector.val);
                 free(vector.val);
-                LOG_INFO("[RANK 0] DEBUG: Freed vector.val");
-
-                LOG_INFO("[RANK 0] DEBUG: About to free resVector.val=%p", (void*)resVector.val);
                 free(resVector.val);
-                LOG_INFO("[RANK 0] DEBUG: Freed resVector.val");
-
-                LOG_INFO("[RANK 0] DEBUG: About to free finalRes.val=%p", (void*)finalRes.val);
                 free(finalRes.val);
-                LOG_INFO("[RANK 0] DEBUG: Freed finalRes.val");
 
-            LOG_INFO("[RANK 0] DEBUG: Starting CSV export section");
             /* Initialize header with 4 columns */
             Header h;
             h.count = 4;
             h.s = malloc(sizeof(char*) * h.count);
             if (!h.s) { perror("malloc"); return 1; }
-            LOG_INFO("[RANK 0] DEBUG: Allocated h.s array");
 
             h.s[0] = strdup("Time");
             h.s[1] = strdup("Iteration");
             h.s[2] = strdup("Status");
 			h.s[3] = strdup("NProc");
-            LOG_INFO("[RANK 0] DEBUG: Created header strings");
 
             /* If export_path is a directory, build a file path inside it */
-            LOG_INFO("[RANK 0] DEBUG: Checking export_path: %s", export_path);
             char *final_export_path = export_path;
             bool allocated_path = false;
             struct stat st;
             if (stat(export_path, &st) == 0 && S_ISDIR(st.st_mode)) {
-                LOG_INFO("[RANK 0] DEBUG: export_path is a directory, building filename");
                 char sanitized[512];
                 if (strcmp(matrix_type, "synthetic") == 0) {
                     snprintf(sanitized, sizeof(sanitized), "synthetic_%dx%d_%d", syn_rows, syn_cols, syn_nnz);
@@ -442,7 +397,6 @@ int main(int argc, char **argv) {
                     snprintf(sanitized, sizeof(sanitized), "%s", file_path);
                     for (char *p = sanitized; *p; ++p) if (*p == '/') *p = '_';
                 }
-                LOG_INFO("[RANK 0] DEBUG: Sanitized name: %s", sanitized);
                 size_t need = strlen(export_path) + 1 + strlen("stats_mpi_SpMV_") + strlen(sanitized) + strlen(".csv") + 1;
                 final_export_path = malloc(need);
                 if (!final_export_path) { perror("malloc"); return 1; }
@@ -452,15 +406,11 @@ int main(int argc, char **argv) {
                 } else {
                     snprintf(final_export_path, need, "%s/stats_mpi_SpMV_%s.csv", export_path, sanitized);
                 }
-                LOG_INFO("[RANK 0] DEBUG: Final export path: %s", final_export_path);
             }
 
-            LOG_INFO("[RANK 0] DEBUG: About to call appendToCSV for header");
             appendToCSV(&h, NULL, final_export_path);
-            LOG_INFO("[RANK 0] DEBUG: Called appendToCSV for header");
 
             /* Initialize values for one row */
-            LOG_INFO("[RANK 0] DEBUG: Creating values struct");
             Values v;
             v.len = 4;
             v.value = malloc(sizeof(double) * v.len);
@@ -469,54 +419,32 @@ int main(int argc, char **argv) {
             v.value[1] = iteration;
             v.value[2] = status;
 			v.value[3] = world_size;
-            LOG_INFO("[RANK 0] DEBUG: Values created: [%.6f, %d, %d, %d]",
-                    computeTime, iteration, (int)status, world_size);
 
-            LOG_INFO("[RANK 0] DEBUG: About to call appendToCSV for values");
             appendToCSV(NULL, &v, final_export_path);
-            LOG_INFO("[RANK 0] DEBUG: Called appendToCSV for values");
 
             /* Free allocated memory */
-            LOG_INFO("[RANK 0] DEBUG: Freeing CSV-related memory");
             for (int i = 0; i < h.count; ++i) {
-                LOG_INFO("[RANK 0] DEBUG: Freeing h.s[%d]=%p", i, (void*)h.s[i]);
                 free(h.s[i]);
             }
-            LOG_INFO("[RANK 0] DEBUG: Freeing h.s=%p", (void*)h.s);
             free(h.s);
-            LOG_INFO("[RANK 0] DEBUG: Freeing v.value=%p", (void*)v.value);
             free(v.value);
             if (allocated_path) {
-                LOG_INFO("[RANK 0] DEBUG: Freeing allocated final_export_path=%p", (void*)final_export_path);
                 free(final_export_path);
             }
-            LOG_INFO("[RANK 0] DEBUG: Freed all CSV-related memory");
 
             LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
         }
 
-        LOG_INFO("[RANK %d] DEBUG: About to free dynamically allocated arrays", world_rank);
-        LOG_INFO("[RANK %d] DEBUG: About to free dynamically allocated arrays", world_rank);
         // Free dynamically allocated arrays (ALL RANKS)
         free(sendCountsOther);
-        LOG_INFO("[RANK %d] DEBUG: Freed sendCountsOther", world_rank);
         free(sendCountsV);
-        LOG_INFO("[RANK %d] DEBUG: Freed sendCountsV", world_rank);
         free(sendCountsPtr);
-        LOG_INFO("[RANK %d] DEBUG: Freed sendCountsPtr", world_rank);
         free(dispPtr);
-        LOG_INFO("[RANK %d] DEBUG: Freed dispPtr", world_rank);
         free(dispOther);
-        LOG_INFO("[RANK %d] DEBUG: Freed dispOther", world_rank);
         free(dispV);
-        LOG_INFO("[RANK %d] DEBUG: Freed dispV", world_rank);
         free(dispResV);
-        LOG_INFO("[RANK %d] DEBUG: Freed dispResV", world_rank);
         free(reciveCountsResV);
-        LOG_INFO("[RANK %d] DEBUG: Freed reciveCountsResV", world_rank);
 
-        LOG_INFO("[RANK %d] DEBUG: About to call MPI_Finalize", world_rank);
         MPI_Finalize();
-        LOG_INFO("[RANK %d] DEBUG: Called MPI_Finalize, exiting", world_rank);
         return 0;
 }
