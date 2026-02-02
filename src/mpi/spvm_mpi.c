@@ -302,7 +302,6 @@ int main(int argc, char **argv) {
         int* gather_displs = NULL;
 
 		if (world_rank == 0) {
-    		resVector.val = calloc(c1.rows, sizeof(double));
     		gather_buffer = resVector.val;
     		gather_counts = reciveCountsResV;
     		gather_displs = dispResV;
