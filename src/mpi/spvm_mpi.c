@@ -168,6 +168,12 @@ int main(int argc, char **argv) {
                 resVector.val = calloc(c1.rows, sizeof(double));
                 finalRes.len = c1.rows;
                 finalRes.val = calloc(c1.rows, sizeof(double));
+
+                // Save c1 pointers before splitCOOMatrix in case they get corrupted
+                int* c1_row_backup = c1.row;
+                int* c1_col_backup = c1.col;
+                double* c1_val_backup = c1.val;
+
                 splitCOOMatrix(&c1, cooMatrices, world_size);
 				LOG_INFO("[RANK 0] MATRIX 0, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         			cooMatrices[0].val[0], cooMatrices[0].val[1], cooMatrices[0].val[2], cooMatrices[0].val[3], cooMatrices[0].val[4]);
@@ -352,13 +358,13 @@ int main(int argc, char **argv) {
     				}
                 }
 
-				LOG_INFO("[RANK 0] DEBUG: About to free c1 arrays: c1.row=%p, c1.col=%p, c1.val=%p",
-						(void*)c1.row, (void*)c1.col, (void*)c1.val);
-				free(c1.row);
+				LOG_INFO("[RANK 0] DEBUG: About to free c1 arrays using backup pointers: row=%p, col=%p, val=%p",
+						(void*)c1_row_backup, (void*)c1_col_backup, (void*)c1_val_backup);
+				free(c1_row_backup);
 				LOG_INFO("[RANK 0] DEBUG: Freed c1.row");
-				free(c1.col);
+				free(c1_col_backup);
 				LOG_INFO("[RANK 0] DEBUG: Freed c1.col");
-				free(c1.val);
+				free(c1_val_backup);
 				LOG_INFO("[RANK 0] DEBUG: Freed c1.val");
 
 				LOG_INFO("[RANK 0] DEBUG: About to free serialRes.val=%p", (void*)serialRes.val);
