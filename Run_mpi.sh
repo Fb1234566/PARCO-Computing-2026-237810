@@ -7,6 +7,7 @@ DATA_DIR="$ROOT_DIR/datasets"
 # Possible overrides from outside (binary paths)
 BIN_SERIAL="${BIN_SERIAL:-}"
 BIN_MPI="${BIN_MPI:-}"
+BIN_BINNING="${BIN_BINNING:-}"
 MPI_RUN_CMD="${MPI_RUN_CMD:-mpirun}"
 
 # Function to resolve a binary: search for executable or file and make it executable
@@ -59,6 +60,7 @@ resolve_bin() {
 # Resolve binaries
 resolve_bin BIN_SERIAL serial_spmv
 resolve_bin BIN_MPI mpi
+resolve_bin BIN_BINNING openmp_spmv_binning
 
 if [ $# -lt 3 ]; then
   echo "Usage: $0 <matrix_path> <results_dir> <plots_dir>" >&2
@@ -131,6 +133,19 @@ for nprocs in "${MPi_SIZES[@]}"; do
     # Use configured MPI runner (mpirun or srun or other)
     if ! $MPI_RUN_CMD -np "$nprocs" "$BIN_MPI" --type file --file "$MATRIX_PATH" --iteration "$iter" --export "$OUTDIR"; then
       echo "Execution failed for \`$RELPATH\` procs $nprocs iter $iter (mpi)" >&2
+    fi
+  done
+done
+
+# OpenMP Binning: run 10 iterations for various thread counts
+THREADS=(1 2 4 6 8 12 16 24 32)
+BINNING_ITERATIONS=10
+
+for nthreads in "${THREADS[@]}"; do
+  for iter in $(seq 1 "$BINNING_ITERATIONS"); do
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Binning threads=$nthreads iter=$iter/$BINNING_ITERATIONS: $RELPATH -> $OUTDIR"
+    if ! "$BIN_BINNING" "$RELPATH" "$iter" "$OUTDIR" "$nthreads"; then
+      echo "Execution failed for \`$RELPATH\` threads $nthreads iter $iter (binning)" >&2
     fi
   done
 done
