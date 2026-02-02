@@ -163,10 +163,7 @@ int main(int argc, char **argv) {
                 computeSpvmSerial(&mComplete, &vector, &serialRes);
 
                 bufCol = calloc(c1.nnz, sizeof(int));
-                bufPtr = calloc(c1.rows+1, sizeof(int));
                 bufVal = calloc(c1.nnz, sizeof(double));
-                LOG_INFO("[RANK 0] Allocated buffers: bufCol=%p, bufPtr=%p, bufVal=%p (size=%d)",
-                        (void*)bufCol, (void*)bufPtr, (void*)bufVal, c1.nnz);
                 resVector.len = c1.rows;
                 resVector.val = calloc(c1.rows, sizeof(double));
                 finalRes.len = c1.rows;
@@ -174,8 +171,21 @@ int main(int argc, char **argv) {
                 splitCOOMatrix(&c1, cooMatrices, world_size);
 				LOG_INFO("[RANK 0] MATRIX 0, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         			cooMatrices[0].val[0], cooMatrices[0].val[1], cooMatrices[0].val[2], cooMatrices[0].val[3], cooMatrices[0].val[4]);
-                // Fill the headers in order to allow allocation of arrays
+
+                // Split the matrix into parts and convert them to CSR
+                COOListToCSR(cooMatrices, procMatrices, world_size);
+
+                // Calculate total buffer size needed for rowPtr (sum of all procMatrices[i].rows+1)
+                int total_rowptr_size = 0;
                 int i;
+                for(i=0; i<world_size; i++){
+                        total_rowptr_size += procMatrices[i].rows + 1;
+                }
+
+                // Allocate bufPtr with correct size
+                bufPtr = calloc(total_rowptr_size, sizeof(int));
+
+                // Fill the headers in order to allow allocation of arrays
                 for(i=0; i<world_size; i++){
                         headers[i].rows = cooMatrices[i].rows;
                         headers[i].cols = cooMatrices[i].cols;
@@ -189,9 +199,6 @@ int main(int argc, char **argv) {
                         }
                         reciveCountsResV[i] = headers[i].rows;
                 }
-
-                // Split the matrix into parts and convert them to CSR
-                COOListToCSR(cooMatrices, procMatrices, world_size);
                 for(int i = 0; i < world_size; i++){
                         free(cooMatrices[i].row);
                         free(cooMatrices[i].col);
@@ -215,19 +222,6 @@ int main(int argc, char **argv) {
                         sendCountsV[i] = procMatrices[i].cols;
                         dispV[i] = 0;
 
-                        // Log before copying for rank 0
-                        if (i == 0) {
-                                LOG_INFO("[RANK 0] BEFORE memcpy: procMatrices[0].val=%p, bufVal=%p, dispOther[0]=%d",
-                                        (void*)procMatrices[0].val, (void*)bufVal, dispOther[0]);
-                                LOG_INFO("[RANK 0] BEFORE memcpy: procMatrices[0] has nnz=%d, first 5 vals: %.6f, %.6f, %.6f, %.6f, %.6f",
-                                        procMatrices[0].nnz,
-                                        procMatrices[0].nnz > 0 ? procMatrices[0].val[0] : 0.0,
-                                        procMatrices[0].nnz > 1 ? procMatrices[0].val[1] : 0.0,
-                                        procMatrices[0].nnz > 2 ? procMatrices[0].val[2] : 0.0,
-                                        procMatrices[0].nnz > 3 ? procMatrices[0].val[3] : 0.0,
-                                        procMatrices[0].nnz > 4 ? procMatrices[0].val[4] : 0.0);
-                        }
-
                         // Column index
                         if (sendCountsOther[i] > 0 && procMatrices[i].col != NULL) {
                                 memcpy(bufCol + dispOther[i], procMatrices[i].col,
@@ -245,25 +239,7 @@ int main(int argc, char **argv) {
                                 memcpy(bufPtr + dispPtr[i], procMatrices[i].rowPtr,
                                        (size_t)sendCountsPtr[i] * sizeof(bufPtr[0]));
                         }
-
-                        // Log after copying for rank 0
-                        if (i == 0) {
-                                LOG_INFO("[RANK 0] AFTER memcpy: bufVal at offset %d has first 5 vals: %.6f, %.6f, %.6f, %.6f, %.6f",
-                                        dispOther[0],
-                                        sendCountsOther[0] > 0 ? bufVal[dispOther[0]] : 0.0,
-                                        sendCountsOther[0] > 1 ? bufVal[dispOther[0] + 1] : 0.0,
-                                        sendCountsOther[0] > 2 ? bufVal[dispOther[0] + 2] : 0.0,
-                                        sendCountsOther[0] > 3 ? bufVal[dispOther[0] + 3] : 0.0,
-                                        sendCountsOther[0] > 4 ? bufVal[dispOther[0] + 4] : 0.0);
-                        }
                 }
-
-                // Verify bufVal is still valid after memcpy loop
-                LOG_INFO("[RANK 0] AFTER FULL LOOP: bufVal[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
-                        bufVal[0], bufVal[1], bufVal[2], bufVal[3], bufVal[4]);
-                LOG_INFO("[RANK 0] AFTER FULL LOOP: procMatrices[0].val[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
-                        procMatrices[0].val[0], procMatrices[0].val[1], procMatrices[0].val[2],
-                        procMatrices[0].val[3], procMatrices[0].val[4]);
 
                 LOG_INFO("[RANK 0] Distributing matrix blocks to %d ranks", world_size);
         }
@@ -299,28 +275,10 @@ int main(int argc, char **argv) {
         m.col = malloc(sizeof(int) * ((m.nnz > 0) ? m.nnz : 1));
         m.val = malloc(sizeof(double) * ((m.nnz > 0) ? m.nnz : 1));
 
-        // Log buffer state before Scatterv on rank 0
-        if (world_rank == 0) {
-                LOG_INFO("[RANK 0] BEFORE Scatterv: m.rows=%d, m.cols=%d, m.nnz=%d", m.rows, m.cols, m.nnz);
-                LOG_INFO("[RANK 0] BEFORE Scatterv: bufVal[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
-                        bufVal[0], bufVal[1], bufVal[2], bufVal[3], bufVal[4]);
-                LOG_INFO("[RANK 0] BEFORE Scatterv: sendCountsOther[0]=%d, dispOther[0]=%d",
-                        sendCountsOther[0], dispOther[0]);
-                LOG_INFO("[RANK 0] BEFORE Scatterv: m.val ptr=%p, allocated size=%d",
-                        (void*)m.val, (m.nnz > 0) ? m.nnz : 1);
-        }
-
         MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        // Log received data on rank 0
-        if (world_rank == 0) {
-                LOG_INFO("[RANK 0] AFTER Scatterv: bufVal[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
-                        bufVal[0], bufVal[1], bufVal[2], bufVal[3], bufVal[4]);
-                LOG_INFO("[RANK 0] AFTER Scatterv: m.val[0:5] = %.6f, %.6f, %.6f, %.6f, %.6f",
-                        m.val[0], m.val[1], m.val[2], m.val[3], m.val[4]);
-        }
 
         // Broadcast the full vector to all ranks
         MPI_Bcast(vector.val, vec_len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
