@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
     		gather_displs = dispResV;
 		}
 		LOG_INFO("[RANK %d] Result Vecto, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
-        	world_rank, resVector.val[0], resVector.val[1], resVector.val[2], resVector.val[3], resVector.val[4]);
+        	world_rank, res.val[0], res.val[1], res.val[2], res.val[3], res.val[4]);
 
 		MPI_Gatherv(res.val, res.len, MPI_DOUBLE, gather_buffer, gather_counts, gather_displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Reduce(&diff, &computeTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
