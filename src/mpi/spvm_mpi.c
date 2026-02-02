@@ -270,7 +270,8 @@ int main(int argc, char **argv) {
         MPI_Bcast(vector.val, vec_len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		LOG_INFO("[RANK %d] Vector received, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         	world_rank, vector.val[0], vector.val[1], vector.val[2], vector.val[3], vector.val[4]);
-
+   		LOG_INFO("[RANK %d] Matrix received, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
+        	world_rank, m.val[0], m.val[1], m.val[2], m.val[3], m.val[4]);
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
 
         double start, end;
@@ -292,7 +293,7 @@ int main(int argc, char **argv) {
     		gather_counts = reciveCountsResV;
     		gather_displs = dispResV;
 		}
-		LOG_INFO("[RANK %d] Result Vecto, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
+		LOG_INFO("[RANK %d] Vecto, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         	world_rank, res.val[0], res.val[1], res.val[2], res.val[3], res.val[4]);
 
 		MPI_Gatherv(res.val, res.len, MPI_DOUBLE, gather_buffer, gather_counts, gather_displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
