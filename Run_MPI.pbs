@@ -9,7 +9,7 @@
 # Set the maximum wall time
 #PBS -l walltime=06:00:00
 # Number of nodes, cpus, mpi processors and amount of memory
-#PBS -l select=4:ncpus=4:mpiprocs=256:mem=25gb
+#PBS -l select=4:ncpus=64:mpiprocs=256:mem=25gb
 
 # Load modules required for build and MPI runtime
 module load gcc91
