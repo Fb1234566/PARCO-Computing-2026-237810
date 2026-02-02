@@ -2,7 +2,6 @@
 set -euo pipefail
 
 DATA_DIR="datasets"
-MPI_SIZES=(1 2 4 8 16 32 64 128 256)
 
 # Load modules required for MPI runs and Python analysis
 module load gcc91
@@ -39,19 +38,6 @@ WORKDIR="$(pwd)"
 mkdir -p "$WORKDIR/results/run_${RUN_TIMESTAMP}"
 mkdir -p "$WORKDIR/plots/run_${RUN_TIMESTAMP}"
 mkdir -p "$DATA_DIR"
-
-# Generate synthetic matrices for weak scaling
-echo "Generating synthetic matrices for weak scaling analysis..."
-cd datasets
-for mpi_size in "${MPI_SIZES[@]}"; do
-    rows=$((1000 * mpi_size))
-    cols=$((1000 * mpi_size))
-    nnz=$((1000 * mpi_size))
-    echo "Generating matrix for MPI_SIZE=$mpi_size (${rows}x${cols}, nnz=${nnz})"
-    .././bin/create_synthetic_matrices "$rows" "$cols" "$nnz"
-done
-echo "Synthetic matrices generated successfully."
-cd ..
 
 # Submit one job per matrix (loop over MPI_SIZES happens inside the PBS job)
 for f in "$DATA_DIR"/*.mtx; do
