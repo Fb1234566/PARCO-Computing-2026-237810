@@ -22,7 +22,6 @@ void print_help(char *prog_name) {
     printf("  --export <path> Path to result file\n");
     printf("  --iteration <int> Path to result file\n");
 	printf("  --help          Show this help message\n");
-	printf("  --nprocs <int> Number of processros\n");
 }
 
 typedef struct CSRheader{
@@ -64,8 +63,6 @@ int main(int argc, char **argv) {
         int syn_cols = 1000;
         int syn_nnz = 5000;
 		int iteration = 0;
-		int nprocs = -1;
-
         // Simple manual parsing
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--help") == 0) {
@@ -86,8 +83,6 @@ int main(int argc, char **argv) {
                 export_path = argv[++i];
             } else if (strcmp(argv[i], "--iteration") == 0 && i + 1 < argc) {
                 iteration = atoi(argv[++i]);
-            } else if (strcmp(argv[i], "--nprocs") == 0 && i + 1 < argc) {
-                nprocs = atoi(argv[++i]);
             }
         }
 
