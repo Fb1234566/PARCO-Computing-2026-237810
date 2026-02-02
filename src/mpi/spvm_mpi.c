@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
                 finalRes.len = c1.rows;
                 finalRes.val = calloc(c1.rows, sizeof(double));
                 splitCOOMatrix(&c1, cooMatrices, world_size);
-				LOG_INFO("[RANK 0] Vector initialized, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
+				LOG_INFO("[RANK 0] MATRIX 0, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         			cooMatrices[0].val[0], cooMatrices[0].val[1], cooMatrices[0].val[2], cooMatrices[0].val[3], cooMatrices[0].val[4]);
                 // Fill the headers in order to allow allocation of arrays
                 int i;
