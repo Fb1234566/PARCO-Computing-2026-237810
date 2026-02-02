@@ -104,6 +104,11 @@ int main(int argc, char **argv) {
 		resVector.len = 0;
 		resVector.val = NULL;
 
+		// Backup pointers for c1 to safely free them later
+		int* c1_row_backup = NULL;
+		int* c1_col_backup = NULL;
+		double* c1_val_backup = NULL;
+
         // Dynamically allocate arrays to avoid stack overflow with large world_size
 		int* sendCountsOther = malloc(world_size * sizeof(int));
 		int* sendCountsV = malloc(world_size * sizeof(int));
