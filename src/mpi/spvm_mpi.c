@@ -162,6 +162,11 @@ int main(int argc, char **argv) {
                 COOToCSR(&c1, &mComplete);
                 computeSpvmSerial(&mComplete, &vector, &serialRes);
 
+                // Free mComplete
+                free(mComplete.rowPtr);
+                free(mComplete.col);
+                free(mComplete.val);
+
                 bufCol = calloc(c1.nnz, sizeof(int));
                 bufVal = calloc(c1.nnz, sizeof(double));
                 resVector.len = c1.rows;
@@ -366,6 +371,7 @@ int main(int argc, char **argv) {
                 free(procMatrices);
 
                 free(bufCol);
+                free(bufVal);
                 free(bufPtr);
                 free(headers);
                 free(vector.val);
