@@ -160,8 +160,6 @@ int main(int argc, char **argv) {
                 serialRes.len = c1.rows;
                 serialRes.val = calloc(c1.rows, sizeof(double));
                 COOToCSR(&c1, &mComplete);
-				LOG_INFO("[RANK 0] Matrix initialized, 2 values: %.6f, %.6f",
-        			mComplete.val[0], mComplete.val[127]);
                 computeSpvmSerial(&mComplete, &vector, &serialRes);
 
                 bufCol = calloc(c1.nnz, sizeof(int));
@@ -172,7 +170,8 @@ int main(int argc, char **argv) {
                 finalRes.len = c1.rows;
                 finalRes.val = calloc(c1.rows, sizeof(double));
                 splitCOOMatrix(&c1, cooMatrices, world_size);
-
+				LOG_INFO("[RANK 0] Vector initialized, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
+        			cooMatrices[0].val[0], cooMatrices[0].val[1], cooMatrices[0].val[2], cooMatrices[0].val[3], cooMatrices[0].val[4]);
                 // Fill the headers in order to allow allocation of arrays
                 int i;
                 for(i=0; i<world_size; i++){
