@@ -365,7 +365,6 @@ int main(int argc, char **argv) {
                 free(procMatrices);
 
                 free(bufCol);
-                free(bufVal);
                 free(bufPtr);
                 free(headers);
                 free(vector.val);
@@ -437,9 +436,6 @@ int main(int argc, char **argv) {
         free(dispV);
         free(dispResV);
         free(reciveCountsResV);
-
-        // Ensure all ranks wait for rank 0 to complete before finalizing
-        MPI_Barrier(MPI_COMM_WORLD);
 
         MPI_Finalize();
         return 0;
