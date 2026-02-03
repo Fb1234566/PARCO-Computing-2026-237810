@@ -4,6 +4,7 @@
 #include "io.h"
 
 void computeSpvmSerial(CSRMatrix* in, Vector* vec, Vector* res);
+long long computeFlops(CSRMatrix* in);
 
 
 #endif

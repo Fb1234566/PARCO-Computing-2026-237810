@@ -92,6 +92,8 @@ int main(int argc, char **argv) {
 
         COOMatrix c1;
 		double computeTime;
+        double commTime = 0.0;
+        long long totalFlops = 0;
         CSRHeader* headers = NULL;
         CSRMatrix* procMatrices = NULL;
         Vector vector, finalRes, serialRes;
@@ -246,9 +248,16 @@ int main(int argc, char **argv) {
                 LOG_INFO("[RANK 0] Distributing matrix blocks to %d ranks", world_size);
         }
 
+        // Barrier to synchronize all processes before starting communication measurements
+        MPI_Barrier(MPI_COMM_WORLD);
+
         // Send the previously compiled headers
         CSRHeader myhdr;
+        double comm_start, comm_end;
+        comm_start = MPI_Wtime();
         MPI_Scatter(headers, 1, csr_header_type, &myhdr, 1, csr_header_type, 0, MPI_COMM_WORLD);
+        comm_end = MPI_Wtime();
+        commTime += (comm_end - comm_start);
 
         CSRMatrix m;
         Vector res;
@@ -261,7 +270,10 @@ int main(int argc, char **argv) {
         if (world_rank == 0) {
             vec_len = vector.len;
         }
+        comm_start = MPI_Wtime();
         MPI_Bcast(&vec_len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        comm_end = MPI_Wtime();
+        commTime += (comm_end - comm_start);
 
         // Allocate vector on non-root ranks (ensure minimum size 1)
         if (world_rank != 0) {
@@ -277,24 +289,37 @@ int main(int argc, char **argv) {
         m.col = malloc(sizeof(int) * ((m.nnz > 0) ? m.nnz : 1));
         m.val = malloc(sizeof(double) * ((m.nnz > 0) ? m.nnz : 1));
 
+        comm_start = MPI_Wtime();
         MPI_Scatterv(bufCol, sendCountsOther, dispOther, MPI_INT, m.col, m.nnz, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Scatterv(bufVal, sendCountsOther, dispOther, MPI_DOUBLE, m.val, m.nnz, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Scatterv(bufPtr, sendCountsPtr, dispPtr, MPI_INT, m.rowPtr, m.rows+1, MPI_INT, 0, MPI_COMM_WORLD);
+        comm_end = MPI_Wtime();
+        commTime += (comm_end - comm_start);
 
 
         // Broadcast the full vector to all ranks
+        comm_start = MPI_Wtime();
         MPI_Bcast(vector.val, vec_len, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        comm_end = MPI_Wtime();
+        commTime += (comm_end - comm_start);
+        
 		LOG_INFO("[RANK %d] Vector received, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         	world_rank, vector.val[0], vector.val[1], vector.val[2], vector.val[3], vector.val[4]);
    		LOG_INFO("[RANK %d] Matrix received, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         	world_rank, m.val[0], m.val[1], m.val[2], m.val[3], m.val[4]);
         LOG_INFO("[RANK %d] Received matrix block: %dx%d, nnz=%d", world_rank, m.rows, m.cols, m.nnz);
+        
+        // Calculate FLOPs for this rank
+        long long localFlops = computeFlops(&m);
+        LOG_INFO("[RANK %d] Local FLOPs: %lld", world_rank, localFlops);
 
+        // Barrier to ensure all processes have finished communication before starting computation
         double start, end;
         MPI_Barrier(MPI_COMM_WORLD);
         start = MPI_Wtime();
         computeSpvmSerial(&m, &vector, &res);
         end = MPI_Wtime();
+        MPI_Barrier(MPI_COMM_WORLD);
 
         double diff = end - start;
         LOG_INFO("[RANK %d] Computation completed in %.6f seconds", world_rank, diff);
@@ -311,8 +336,23 @@ int main(int argc, char **argv) {
 		LOG_INFO("[RANK %d] Vecto, first 5 values: %.6f, %.6f, %.6f, %.6f, %.6f",
         	world_rank, res.val[0], res.val[1], res.val[2], res.val[3], res.val[4]);
 
+		comm_start = MPI_Wtime();
 		MPI_Gatherv(res.val, res.len, MPI_DOUBLE, gather_buffer, gather_counts, gather_displs, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		comm_end = MPI_Wtime();
+		commTime += (comm_end - comm_start);
+		
 		MPI_Reduce(&diff, &computeTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+		
+		// Reduce FLOP count and communication time
+		comm_start = MPI_Wtime();
+		MPI_Reduce(&localFlops, &totalFlops, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+		double maxCommTime;
+		MPI_Reduce(&commTime, &maxCommTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+		comm_end = MPI_Wtime();
+		if (world_rank == 0) {
+			// Don't count the reduce time in the communication overhead
+			commTime = maxCommTime;
+		}
 
         free(m.rowPtr);
         free(m.col);
@@ -374,9 +414,9 @@ int main(int argc, char **argv) {
                 free(resVector.val);
                 free(finalRes.val);
 
-            /* Initialize header with 4 columns */
+            /* Initialize header with 8 columns */
             Header h;
-            h.count = 4;
+            h.count = 8;
             h.s = malloc(sizeof(char*) * h.count);
             if (!h.s) { perror("malloc"); return 1; }
 
@@ -384,6 +424,10 @@ int main(int argc, char **argv) {
             h.s[1] = strdup("Iteration");
             h.s[2] = strdup("Status");
 			h.s[3] = strdup("NProc");
+			h.s[4] = strdup("FLOP");
+			h.s[5] = strdup("CommTime");
+			h.s[6] = strdup("Overhead");
+			h.s[7] = strdup("GFLOPS");
 
             /* If export_path is a directory, build a file path inside it */
             char *final_export_path = export_path;
@@ -412,13 +456,22 @@ int main(int argc, char **argv) {
 
             /* Initialize values for one row */
             Values v;
-            v.len = 4;
+            v.len = 8;
             v.value = malloc(sizeof(double) * v.len);
             if (!v.value) { perror("malloc"); return 1; }
+            
+            // Calculate metrics
+            double overhead = (commTime / (computeTime + commTime)) * 100.0; // Overhead as percentage
+            double gflops = (totalFlops / computeTime) / 1e9; // GFLOP/s
+            
             v.value[0] = computeTime;
             v.value[1] = iteration;
             v.value[2] = status;
 			v.value[3] = world_size;
+			v.value[4] = (double)totalFlops;
+			v.value[5] = commTime;
+			v.value[6] = overhead;
+			v.value[7] = gflops;
 
             appendToCSV(NULL, &v, final_export_path);
 
@@ -433,6 +486,10 @@ int main(int argc, char **argv) {
             }
 
             LOG_INFO("[RANK 0] Completed in %.6f seconds", computeTime);
+            LOG_INFO("[RANK 0] Total FLOPs: %lld", totalFlops);
+            LOG_INFO("[RANK 0] Communication Time: %.6f seconds", commTime);
+            LOG_INFO("[RANK 0] Overhead: %.2f%%", overhead);
+            LOG_INFO("[RANK 0] Performance: %.6f GFLOP/s", gflops);
         }
 
         // Free dynamically allocated arrays (ALL RANKS)
