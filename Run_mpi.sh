@@ -137,7 +137,7 @@ for nprocs in "${MPi_SIZES[@]}"; do
   done
 done
 
-# OpenMP Binning: run 10 iterations for various thread counts
+# OpenMP: run 10 iterations for various thread counts
 THREADS=(1 2 4 8 16 32 64)
 BINNING_ITERATIONS=10
 
