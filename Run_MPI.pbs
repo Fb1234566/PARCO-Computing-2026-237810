@@ -60,12 +60,6 @@ if [ -z "${MATRIX:-}" ] || [ -z "${OUTPUT_DIR:-}" ] || [ -z "${GRAPH_DIR:-}" ]; 
   exit 1
 fi
 
-# Build MPI target to ensure the binary is available
-echo "Building mpi binary (make mpi)"
-make mpi
-make serial-only
-make openmp-static-only
-
 # Ensure Python virtual environment exists for analysis scripts; create only if missing
 if [ ! -d "./.venv" ]; then
   echo "Creating Python virtual environment in .venv"
