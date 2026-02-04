@@ -19,11 +19,6 @@ MPI_SIZES=(1 2 4 8 16 32 64 128 256)
 
 make clean
 
-echo "Building binaries"
-make mpi
-make serial-only
-make openmp-static-only
-
 
 # Create a Python virtual environment (for analysis) and install minimal deps
 if [ ! -d "./.venv" ]; then
