@@ -29,7 +29,7 @@ cd "$DATA_DIR"
 for mpi_size in "${MPI_SIZES[@]}"; do
     rows=$((10000 * mpi_size))
     cols=$((10000 * mpi_size))
-    nnz=$((2000 * mpi_size))
+    nnz=$((200000 * mpi_size))
     echo "Generating matrix for MPI_SIZE=$mpi_size (${rows}x${cols}, nnz=${nnz})"
     ../bin/create_synthetic_matrices "$rows" "$cols" "$nnz"
 done
