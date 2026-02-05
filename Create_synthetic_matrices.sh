@@ -22,14 +22,13 @@ if [ ! -f "bin/create_synthetic_matrices" ]; then
     echo "Building synthetic matrix generator..."
     make synth
 fi
-touch synthetic_matrix_generation.log
 # Generate synthetic matrices for weak scaling
 echo "Generating synthetic matrices for weak scaling analysis..."
 cd "$DATA_DIR"
 for mpi_size in "${MPI_SIZES[@]}"; do
     rows=$((10000 * mpi_size))
     cols=$((10000 * mpi_size))
-    nnz=$((50000 * mpi_size))
+    nnz=$((200000 * mpi_size))
     echo "Generating matrix for MPI_SIZE=$mpi_size (${rows}x${cols}, nnz=${nnz})"
     ../bin/create_synthetic_matrices "$rows" "$cols" "$nnz"
 done
