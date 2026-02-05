@@ -3,8 +3,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+#include <string.h>
 #include "logger.h"
 #include <stdio.h>
+
+// Funzione hash per combinare (row, col) in una chiave unica a 64 bit
+static unsigned long hashCoordinate(int row, int col) {
+    return ((unsigned long)row << 32) | (unsigned long)col;
+}
 
 void readMatrixCOO(const char* path, COOMatrix* m){
     LOG_INFO("Start reading COO matrix from '%s'", path);
@@ -177,30 +183,80 @@ void randomInitCOO(COOMatrix* m, int rows, int cols, int nRanks, int nnz){
 		LOG_WARN("Number of nnz is lower than the number of rows. This causes epmty lines and unbalanced matrices");
 	}
 
+    int hashSize = nnz * 2;
+    bool* used = calloc(hashSize, sizeof(bool));
+    unsigned long* keys = malloc(hashSize * sizeof(unsigned long));
+
+    if (!used || !keys) {
+        LOG_ERROR("Memory allocation failed for hash table");
+        free(used);
+        free(keys);
+        return;
+    }
+    LOG_INFO("Allocated hash table with size %d", hashSize);
+
     COOEntry* elements = malloc(sizeof(COOEntry) * (size_t)nnz);
     if (!elements) {
         LOG_ERROR("Memory allocation failed for elements (nnz=%d)", nnz);
+        free(used);
+        free(keys);
         return;
     }
     LOG_INFO("Allocated elements buffer for %d entries", nnz);
 
-	int nnzPerRow = nnz/rows;
 	int insertedNNZ = 0;
 	int currRow = 0;
+	int attempts = 0;
+	int maxAttemptsPerElement = cols * 2;
+
 	while (insertedNNZ < nnz){
-		COOEntry elem;
-        do {
-            elem.row = currRow%rows;
-            elem.col = generateRandInt(0, cols - 1);
-            elem.val = generateRandDouble(-100.0, 100.0);
-        } while (checkIfValueIsAlreadyPresent(elements, &elem, insertedNNZ));
-        elements[insertedNNZ] = elem;
-		insertedNNZ++;
-		currRow ++;
+        int row = currRow % rows;
+        int col;
+        bool inserted = false;
+
+        for (int attempt = 0; attempt < maxAttemptsPerElement && !inserted; attempt++) {
+            col = generateRandInt(0, cols - 1);
+            unsigned long key = hashCoordinate(row, col);
+            unsigned long hash = key % hashSize;
+
+            bool isDuplicate = false;
+            for (int i = 0; i < hashSize; i++) {
+                unsigned long pos = (hash + i) % hashSize;
+
+                if (!used[pos]) {
+                    used[pos] = true;
+                    keys[pos] = key;
+                    elements[insertedNNZ].row = row;
+                    elements[insertedNNZ].col = col;
+                    elements[insertedNNZ].val = generateRandDouble(-100.0, 100.0);
+                    insertedNNZ++;
+                    currRow++;
+                    inserted = true;
+                    break;
+                } else if (keys[pos] == key) {
+                    isDuplicate = true;
+                    attempts++;
+                    break;
+                }
+            }
+
+            if (inserted) break;
+        }
+
+        if (!inserted) {
+            LOG_WARN("Unable to insert element for row %d after %d attempts - matrix may be too dense", row, maxAttemptsPerElement);
+            break;
+        }
 	}
 
+    free(used);
+    free(keys);
 
-    LOG_INFO("Generated %d unique COO entries (before sort)", insertedNNZ);
+    if (insertedNNZ < nnz) {
+        LOG_WARN("Generated only %d unique entries out of %d requested after %d attempts", insertedNNZ, nnz, attempts);
+    }
+
+    LOG_INFO("Generated %d unique COO entries after %d attempts (before sort)", insertedNNZ, attempts);
 
     qsort(elements, (size_t)insertedNNZ, sizeof(COOEntry), COOEntryCompartor);
     LOG_INFO("Sorted %d COO entries", insertedNNZ);
