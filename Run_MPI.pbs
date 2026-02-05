@@ -53,6 +53,11 @@ export OMP_PLACES=cores
 export OMP_DYNAMIC=false
 export OMP_WAIT_POLICY=active
 
+echo "Building binaries"
+make mpi
+make serial-only
+make openmp-static-only
+
 # Verify required environment variables passed by qsub
 if [ -z "${MATRIX:-}" ] || [ -z "${OUTPUT_DIR:-}" ] || [ -z "${GRAPH_DIR:-}" ]; then
   echo "Usage: qsub -v MATRIX=<path>,OUTPUT_DIR=<outdir>,GRAPH_DIR=<plotdir> Run_MPI.pbs"
