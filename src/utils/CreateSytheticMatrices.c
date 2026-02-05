@@ -5,6 +5,7 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
+#include "../mpi/logger.h"
 
 static int parse_positive_int(const char *s, int *out) {
     char *end = NULL;
