@@ -28,6 +28,25 @@ gcc() {
 g++ --version || true
 gcc --version || true
 
+# Print MPI compiler and runtime versions
+echo "=== MPI Compiler Version ==="
+mpicc --version || true
+echo ""
+
+echo "=== MPI Runtime Version ==="
+mpirun --version || mpiexec --version || true
+echo ""
+
+# Print OpenMP version (via compiler flag)
+echo "=== OpenMP Support ==="
+echo | g++ -fopenmp -dM -E - | grep -i openmp || echo "OpenMP version query failed"
+echo ""
+
+# Print CPU information
+echo "=== CPU Information ==="
+lscpu | grep -E "Model name|Architecture|CPU\(s\)|Thread|Core|Socket|NUMA" || cat /proc/cpuinfo | head -20
+echo ""
+
 # Ensure we execute from the job working directory
 cd "$PBS_O_WORKDIR"
 
