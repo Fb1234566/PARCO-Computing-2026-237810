@@ -22,7 +22,7 @@ if [ ! -f "bin/create_synthetic_matrices" ]; then
     echo "Building synthetic matrix generator..."
     make synth
 fi
-
+touch synthetic_matrix_generation.log
 # Generate synthetic matrices for weak scaling
 echo "Generating synthetic matrices for weak scaling analysis..."
 cd "$DATA_DIR"
