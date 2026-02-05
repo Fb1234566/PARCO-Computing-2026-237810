@@ -17,6 +17,11 @@ static int parse_positive_int(const char *s, int *out) {
 }
 
 int main(int argc, char **argv) {
+    if (logger_init("synthetic_matrix_generation.log", LOG_LEVEL_INFO) != 0) {
+            fprintf(stderr, "Unable to initialize logger\n");
+            return 1;
+    }
+
     if (argc != 4) {
         fprintf(stderr, "Usage: %s rows cols nnz\n", argv[0]);
         return 1;
