@@ -319,7 +319,6 @@ int main(int argc, char **argv) {
         start = MPI_Wtime();
         computeSpvmSerial(&m, &vector, &res);
         end = MPI_Wtime();
-        MPI_Barrier(MPI_COMM_WORLD);
 
         double diff = end - start;
         LOG_INFO("[RANK %d] Computation completed in %.6f seconds", world_rank, diff);
