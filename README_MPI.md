@@ -559,22 +559,23 @@ After collecting benchmark results, you can analyze the performance using the pr
 Run all analysis scripts at once using the master script:
 
 ```bash
-# Run all analyses with default settings
+# Basic usage - specify the timestamped results directory
+./Run_MPI_analysis.sh results/run_20251116_142143 plots
+
+# Alternative - with both directories explicitly specified
+./Run_MPI_analysis.sh results/run_20251116_142143 plots/analysis_output
+
+# If you want to use ./results as default, it will search for the latest run_* directory
 ./Run_MPI_analysis.sh
-
-# Specify custom results and output directories
-./Run_MPI_analysis.sh ./results ./plots
-
-# Use latest timestamped results
-./Run_MPI_analysis.sh ./results/run_<timestamp> ./plots
 ```
 
+**Important**: The `results_dir` argument should point directly to your timestamped results directory (e.g., `results/run_20251116_142143`), which contains the matrix subdirectories.
+
 The script will automatically:
-1. Find the latest timestamped results directory
-2. Run communication overhead analysis for all matrices
-3. Perform strong scaling comparison (if at least 2 matrices available)
-4. Execute basic weak scaling analysis (if weak scaling matrices exist)
-5. Generate enhanced weak scaling reports with detailed metrics
+1. Analyze all regular matrix directories for communication overhead
+2. Perform strong scaling comparison between the first two matrices found
+3. Execute basic weak scaling analysis (if `matrix_weak_scaling_*` directories exist)
+4. Generate enhanced weak scaling reports with detailed metrics
 
 **Example Output:**
 ```
@@ -585,10 +586,14 @@ The script will automatically:
 ✓ Output directory: ./plots
 
 Configuration:
-  Results directory: ./results/run_20251116_142143
-  Output directory:  ./plots
+  Results directory: results/run_20251116_142143
+  Output directory:  plots
   Datasets directory: ./datasets
   Percentile filter: 90th
+
+Found:
+  Regular matrices: 3
+  Weak scaling matrices: 9
 
 [1/4] Running Communication Overhead Analysis...
   Analyzing: inline_1
@@ -599,7 +604,7 @@ Configuration:
   Comparing: inline_1 vs largebasis
 
 [3/4] Running Basic Weak Scaling Analysis...
-  Analyzing weak scaling results from: ./results/run_20251116_142143
+  Analyzing 9 weak scaling matrices...
 
 [4/4] Running Enhanced Weak Scaling Analysis...
   Generating enhanced weak scaling report...
@@ -608,7 +613,7 @@ Configuration:
    Analysis Complete
 ========================================
 
-✓ Results saved to: ./plots
+✓ Results saved to: plots
 
 Generated files:
   Plots:   12

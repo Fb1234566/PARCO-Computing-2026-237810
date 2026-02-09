@@ -56,15 +56,6 @@ mkdir -p "$OUTPUT_DIR"
 echo -e "${GREEN}✓${NC} Output directory: $OUTPUT_DIR"
 echo ""
 
-# Find latest results directory if results_dir contains timestamped runs
-if [ -d "$RESULTS_DIR" ]; then
-    LATEST_RUN=$(find "$RESULTS_DIR" -maxdepth 1 -type d -name "run_*" | sort -r | head -n 1)
-    if [ -n "$LATEST_RUN" ]; then
-        echo -e "${YELLOW}Found timestamped results in: $LATEST_RUN${NC}"
-        RESULTS_DIR="$LATEST_RUN"
-    fi
-fi
-
 echo -e "${BLUE}Configuration:${NC}"
 echo -e "  Results directory: $RESULTS_DIR"
 echo -e "  Output directory:  $OUTPUT_DIR"
@@ -72,27 +63,38 @@ echo -e "  Datasets directory: $DATASETS_DIR"
 echo -e "  Percentile filter: ${PERCENTILE}th"
 echo ""
 
+# Count available analyses
+MATRIX_COUNT=$(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d ! -name "matrix_weak_scaling_*" | wc -l)
+WEAK_SCALING_COUNT=$(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d -name "matrix_weak_scaling_*" | wc -l)
+
+echo -e "${BLUE}Found:${NC}"
+echo -e "  Regular matrices: $MATRIX_COUNT"
+echo -e "  Weak scaling matrices: $WEAK_SCALING_COUNT"
+echo ""
+
 ################################################################################
 # 1. Communication Overhead Analysis
 ################################################################################
 echo -e "${BLUE}[1/4] Running Communication Overhead Analysis...${NC}"
 
-# Find matrix folders with MPI results
-MATRIX_FOLDERS=$(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d)
+# Find matrix folders with MPI results (excluding weak scaling matrices)
+MATRIX_FOLDERS=$(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d ! -name "matrix_weak_scaling_*")
 
 if [ -z "$MATRIX_FOLDERS" ]; then
-    echo -e "${YELLOW}Warning: No matrix folders found in $RESULTS_DIR${NC}"
+    echo -e "${YELLOW}  No matrix folders found${NC}"
 else
     for MATRIX_FOLDER in $MATRIX_FOLDERS; do
         MATRIX_NAME=$(basename "$MATRIX_FOLDER")
 
         # Check if MPI stats exist
-        if ls "$MATRIX_FOLDER"/stats_*mpi*.csv 1> /dev/null 2>&1; then
+        if ls "$MATRIX_FOLDER"/stats_*[Mm][Pp][Ii]*.csv 1> /dev/null 2>&1; then
             echo -e "  Analyzing: ${GREEN}$MATRIX_NAME${NC}"
             python3 "$SCRIPTS_DIR/analyze_communication_overhead.py" \
                 "$MATRIX_FOLDER" \
                 "$OUTPUT_DIR" \
-                "$PERCENTILE" || echo -e "${YELLOW}  Warning: Failed to analyze $MATRIX_NAME${NC}"
+                "$PERCENTILE" 2>&1 | grep -E "(Error|✓|Analyzing|Summary)" || echo -e "${YELLOW}    Warning: Analysis produced no output${NC}"
+        else
+            echo -e "  ${YELLOW}Skipping $MATRIX_NAME (no MPI results)${NC}"
         fi
     done
 fi
@@ -103,8 +105,8 @@ echo ""
 ################################################################################
 echo -e "${BLUE}[2/4] Running Strong Scaling Analysis...${NC}"
 
-# Find pairs of matrices to compare
-AVAILABLE_MATRICES=($(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;))
+# Find pairs of matrices to compare (excluding weak scaling)
+AVAILABLE_MATRICES=($(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d ! -name "matrix_weak_scaling_*" -exec basename {} \; | sort))
 
 if [ ${#AVAILABLE_MATRICES[@]} -ge 2 ]; then
     echo -e "  Comparing: ${GREEN}${AVAILABLE_MATRICES[0]}${NC} vs ${GREEN}${AVAILABLE_MATRICES[1]}${NC}"
@@ -113,9 +115,9 @@ if [ ${#AVAILABLE_MATRICES[@]} -ge 2 ]; then
         "${AVAILABLE_MATRICES[0]}" \
         "${AVAILABLE_MATRICES[1]}" \
         "$OUTPUT_DIR" \
-        "$PERCENTILE" || echo -e "${YELLOW}  Warning: Strong scaling analysis failed${NC}"
+        "$PERCENTILE" 2>&1 | grep -E "(Error|✓|Analyzing|Plotting)" || echo -e "${YELLOW}    Warning: Analysis produced no output${NC}"
 else
-    echo -e "${YELLOW}  Warning: Need at least 2 matrices for strong scaling comparison${NC}"
+    echo -e "${YELLOW}  Skipped: Need at least 2 matrices (found ${#AVAILABLE_MATRICES[@]})${NC}"
 fi
 echo ""
 
@@ -125,16 +127,16 @@ echo ""
 echo -e "${BLUE}[3/4] Running Basic Weak Scaling Analysis...${NC}"
 
 # Check for weak scaling matrices
-WEAK_SCALING_FOLDERS=$(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d -name "matrix_weak_scaling_*" | head -n 1)
+WEAK_SCALING_COUNT=$(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d -name "matrix_weak_scaling_*" | wc -l)
 
-if [ -n "$WEAK_SCALING_FOLDERS" ]; then
-    echo -e "  Analyzing weak scaling results from: ${GREEN}$RESULTS_DIR${NC}"
+if [ $WEAK_SCALING_COUNT -gt 0 ]; then
+    echo -e "  Analyzing $WEAK_SCALING_COUNT weak scaling matrices..."
     python3 "$SCRIPTS_DIR/analyze_weak_scaling.py" \
         "$RESULTS_DIR" \
         "$OUTPUT_DIR" \
-        "$PERCENTILE" || echo -e "${YELLOW}  Warning: Weak scaling analysis failed${NC}"
+        "$PERCENTILE" 2>&1 | grep -E "(Error|✓|Analyzing|Loaded|Plotting)" || echo -e "${YELLOW}    Warning: Analysis produced no output${NC}"
 else
-    echo -e "${YELLOW}  Warning: No weak scaling matrices found (matrix_weak_scaling_*)${NC}"
+    echo -e "${YELLOW}  Skipped: No weak scaling matrices found${NC}"
 fi
 echo ""
 
@@ -143,19 +145,19 @@ echo ""
 ################################################################################
 echo -e "${BLUE}[4/4] Running Enhanced Weak Scaling Analysis...${NC}"
 
-if [ -d "$DATASETS_DIR" ] && [ -n "$WEAK_SCALING_FOLDERS" ]; then
+if [ $WEAK_SCALING_COUNT -gt 0 ] && [ -d "$DATASETS_DIR" ]; then
     echo -e "  Generating enhanced weak scaling report..."
     python3 "$SCRIPTS_DIR/analyze_weak_scaling_spmv_enhanced.py" \
         "$RESULTS_DIR" \
         "$DATASETS_DIR" \
         "$OUTPUT_DIR" \
-        "$PERCENTILE" || echo -e "${YELLOW}  Warning: Enhanced weak scaling analysis failed${NC}"
+        "$PERCENTILE" 2>&1 | grep -E "(Error|✓|Loading|Analyzing|Report)" || echo -e "${YELLOW}    Warning: Analysis produced no output${NC}"
 else
-    if [ ! -d "$DATASETS_DIR" ]; then
-        echo -e "${YELLOW}  Warning: Datasets directory '$DATASETS_DIR' not found${NC}"
+    if [ $WEAK_SCALING_COUNT -eq 0 ]; then
+        echo -e "${YELLOW}  Skipped: No weak scaling results${NC}"
     fi
-    if [ -z "$WEAK_SCALING_FOLDERS" ]; then
-        echo -e "${YELLOW}  Warning: No weak scaling results found${NC}"
+    if [ ! -d "$DATASETS_DIR" ]; then
+        echo -e "${YELLOW}  Skipped: Datasets directory '$DATASETS_DIR' not found${NC}"
     fi
 fi
 echo ""
