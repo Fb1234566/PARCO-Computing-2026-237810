@@ -109,11 +109,11 @@ echo -e "${BLUE}[2/4] Running Strong Scaling Analysis...${NC}"
 AVAILABLE_MATRICES=($(find "$RESULTS_DIR" -mindepth 1 -maxdepth 1 -type d ! -name "matrix_weak_scaling_*" -exec basename {} \; | sort))
 
 if [ ${#AVAILABLE_MATRICES[@]} -ge 2 ]; then
-    echo -e "  Comparing: ${GREEN}${AVAILABLE_MATRICES[0]}${NC} vs ${GREEN}${AVAILABLE_MATRICES[1]}${NC}"
+    echo -e "  Comparing: ${GREEN}inline_1${NC} vs ${GREEN}largebasis${NC}"
     python3 "$SCRIPTS_DIR/analyze_strong_scaling.py" \
         "$RESULTS_DIR" \
-        "${AVAILABLE_MATRICES[0]}" \
-        "${AVAILABLE_MATRICES[1]}" \
+        "inline_1" \
+        "largebasis" \
         "$OUTPUT_DIR" \
         "$PERCENTILE" 2>&1 | grep -E "(Error|✓|Analyzing|Plotting)" || echo -e "${YELLOW}    Warning: Analysis produced no output${NC}"
 else
