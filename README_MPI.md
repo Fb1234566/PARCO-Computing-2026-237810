@@ -12,8 +12,6 @@
 - [Installation](#installation)
 - [Building the MPI Implementation](#building-the-mpi-implementation)
 - [Usage](#usage)
-    - [Running MPI Implementations](#running-mpi-implementations)
-    - [Running MPI Benchmarks](#running-mpi-benchmarks)
     - [Running on HPC Cluster](#running-on-hpc-cluster)
 - [MPI Configuration](#mpi-configuration)
 - [Reproducibility Steps](#reproducibility-steps)
@@ -210,93 +208,8 @@ The MPI implementation uses:
 
 ## Usage
 
-### Running MPI Implementations
-
-#### Basic MPI Execution
-
-```bash
-# Run with 4 MPI processes
-mpirun -np 4 ./bin/mpi --type file --file datasets/inline_1.mtx --iteration 1 --export results/
-```
-
-#### Command-Line Arguments
-
-```bash
-./bin/mpi [OPTIONS]
-
-Options:
-  --type <str>        Matrix source: 'file' or 'synthetic' (default: file)
-  --file <path>       Path to .mtx file (required if type is 'file')
-  --rows <int>        Number of rows (required if type is 'synthetic')
-  --cols <int>        Number of columns (required if type is 'synthetic')
-  --nnz <int>         Number of non-zeros (required if type is 'synthetic')
-  --export <path>     Output directory for results (default: results/)
-  --iteration <int>   Iteration number for this run (default: 0)
-  --help              Show help message
-```
-
-#### Examples
-
-```bash
-# Example 1: Run with file input
-mpirun -np 8 ./bin/mpi \
-  --type file \
-  --file datasets/inline_1.mtx \
-  --iteration 1 \
-  --export results/
-
-# Example 2: Run with synthetic matrix
-mpirun -np 16 ./bin/mpi \
-  --type synthetic \
-  --rows 10000 \
-  --cols 10000 \
-  --nnz 50000 \
-  --iteration 1 \
-  --export results/
-
-# Example 3: Run weak scaling test
-mpirun -np 32 ./bin/mpi \
-  --type file \
-  --file datasets/nd24k.mtx \
-  --iteration 5 \
-  --export results/weak_scaling/
-```
-
-### Running MPI Benchmarks
-
-#### Automated Benchmark Script
-
-The `Run_mpi.sh` script automates MPI benchmarks with multiple process counts:
-
-```bash
-# Make the script executable (first time only)
-chmod +x Run_mpi.sh
-
-# Run benchmarks for a specific matrix
-./Run_mpi.sh <matrix_path> <results_dir> <plots_dir>
-
-# Example
-./Run_mpi.sh datasets/inline_1.mtx results/mpi_run plots/mpi_run
-```
-
-**What the script does:**
-1. Runs serial baseline (10 iterations)
-2. Runs MPI tests with: 1, 2, 4, 8, 16, 32, 64, 128, 256 processes
-3. Runs OpenMP binning baseline for comparison
-4. Executes 10 iterations per configuration
-5. Generates performance analysis plots
-6. Exports results to CSV files
-
-**Note:** If running under PBS, the script automatically detects allocated resources and restricts MPI process counts accordingly.
-
 ### Running on HPC Cluster
 
-#### Submit Single Job
-
-```bash
-# Submit MPI job via PBS
-qsub -v MATRIX="datasets/inline_1.mtx",OUTPUT_DIR="results/test",GRAPH_DIR="plots/test" Run_MPI.pbs
-```
 
 #### Submit Batch Jobs for All Matrices
 
@@ -332,19 +245,11 @@ chmod +x Submit_jobs_mpi.sh
 
 ## MPI Configuration
 
-### Process Placement
-
-The implementation uses default MPI process placement. For optimal performance on multi-node systems:
-
-```bash
-# Option 1: Use host file for explicit placement
-mpirun -np 64 -hostfile hostfile ./bin/mpi [OPTIONS]
-
-# Option 2: PBS automatically generates hostfile
-# The Run_MPI.pbs script uses $PBS_NODEFILE
-```
+The implementation uses default MPI process placement optimized by PBS job scheduler.
 
 ### Environment Variables
+
+The batch submission script automatically configures the following environment variables:
 
 ```bash
 # OpenMP settings (if using hybrid MPI+OpenMP)
@@ -352,42 +257,20 @@ export OMP_PROC_BIND=close
 export OMP_PLACES=cores
 export OMP_DYNAMIC=false
 export OMP_WAIT_POLICY=active
-
-# MPI tuning (MPICH-specific, optional)
-export MPICH_ASYNC_PROGRESS=1
-export MPICH_MAX_THREAD_SAFETY=multiple
 ```
 
-### Weak Scaling Configuration
-
-For weak scaling tests, use synthetic matrices with sizes proportional to process count:
-
-```bash
-# Example: 1000 rows per process
-PROCS=32
-ROWS=$((1000 * PROCS))
-COLS=$((1000 * PROCS))
-NNZ=$((5000 * PROCS))
-
-mpirun -np $PROCS ./bin/mpi \
-  --type synthetic \
-  --rows $ROWS \
-  --cols $COLS \
-  --nnz $NNZ \
-  --export results/weak_scaling/
-```
 
 ## Reproducibility Steps
 
 ### Complete MPI Test Reproduction
 
-Follow these steps to fully reproduce the MPI benchmarks:
+Follow these steps to fully reproduce the MPI benchmarks on the HPC cluster:
 
 #### Step 1: Environment Setup
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone git@github.com:Fb1234566/PARCO-Computing-2026-237810.git
 cd deliverable1_2025_2026
 
 # Load modules (on HPC cluster)
@@ -426,46 +309,40 @@ make datasets
 
 # Verify datasets
 ls -lh datasets/*.mtx
-
-# To remove datasets (if needed)
-make clean-datasets
 ```
 
-#### Step 4: Run Benchmarks
-
-**Option A: Local Execution (Single Matrix)**
+#### Step 4: Run Benchmarks (HPC Cluster)
 
 ```bash
-# Create output directories
-mkdir -p results/mpi_test
-mkdir -p plots/mpi_test
-
-# Run benchmark for one matrix
-./Run_mpi.sh datasets/inline_1.mtx results/mpi_test plots/mpi_test
-```
-
-**Option B: HPC Cluster Execution (All Matrices)**
-
-```bash
-# Submit all jobs
+# Submit all jobs to the cluster
 ./Submit_jobs_mpi.sh
 
 # Monitor job status
 qstat -u $USER
 
 # Check job output
-tail -f name.o
+tail -f name.o<job_id>
 ```
 
+The `Submit_jobs_mpi.sh` script will:
+1. Load required modules (gcc, MPICH, Python)
+2. Build all necessary binaries
+3. Create timestamped result directories
+4. Submit one PBS job per matrix in `datasets/` folder
+5. Each job tests all MPI process counts: 1, 2, 4, 8, 16, 32, 64, 128, 256
+6. Run serial and OpenMP baselines for comparison
+7. Execute 10 iterations per configuration for statistical robustness
+
 #### Step 5: Analyze Results
+
+After all jobs complete, analyze the results:
 
 ```bash
 # Activate Python environment
 source .venv/bin/activate
 
 # Run analysis scripts
-python3 scripts/analyze_results.py results/run_<timestamp> plots/run_<timestamp>
-python3 scripts/make_paper_figures.py results/run_<timestamp> plots/run_<timestamp>
+./Run_MPI_analysis.sh results/run_<timestamp> plots
 
 # Deactivate environment
 deactivate
@@ -480,44 +357,10 @@ ls -lh results/run_<timestamp>/*/*.csv
 # Check generated plots
 ls -lh plots/run_<timestamp>/*/*.png
 
-# Example: View speedup plot
+# View example speedup plot
 display plots/run_<timestamp>/inline_1/plot_speedup_inline_1.png
 ```
 
-### Minimal Working Example
-
-For a quick test to verify the setup:
-
-```bash
-# Build MPI binary
-make clean && make mpi
-
-# Run with 4 processes on a small matrix
-mpirun -np 4 ./bin/mpi \
-  --type file \
-  --file datasets/inline_1.mtx \
-  --iteration 1 \
-  --export results/test/
-
-# Check output
-cat results/test/stats_MPI_*.csv
-```
-
-Expected output structure:
-```csv
-Time,Iteration,Status,NProc,FLOP,CommTime,Overhead,GFLOPS
-<TIME>,1,success,4,<FLOP>,<COMM_TIME>,<OVERHEAD>,<GFLOPS>
-```
-
-**CSV Field Descriptions:**
-- **Time**: Total execution time in seconds
-- **Iteration**: Iteration number of the current run
-- **Status**: Execution status (success/failure)
-- **NProc**: Number of MPI processes used
-- **FLOP**: Total floating-point operations performed
-- **CommTime**: Time spent in MPI communication operations (seconds)
-- **Overhead**: Communication overhead ratio (CommTime/TotalTime)
-- **GFLOPS**: Gigaflops achieved (GFLOP/s)
 
 ## Performance Analysis
 
@@ -916,9 +759,9 @@ mpicc src/mpi/*.c -o bin/mpi
 ## Related Documentation
 
 - [Main README](README.md) - OpenMP implementation and general project overview
-- [Run_mpi.sh](Run_mpi.sh) - MPI benchmark execution script
 - [Run_MPI.pbs](Run_MPI.pbs) - PBS job configuration
 - [Submit_jobs_mpi.sh](Submit_jobs_mpi.sh) - Batch job submission script
+- [Run_MPI_analysis.sh](Run_MPI_analysis.sh) - Automated analysis script
 
 ## License
 
