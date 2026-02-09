@@ -206,10 +206,6 @@ ls -lh bin/mpi
 ### Compiler Flags
 
 The MPI implementation uses:
-- `-std=c99`: C99 standard
-- `-Wall -Wextra -Wpedantic`: Enable all warnings
-- `-O2 -g`: Optimization level 2 with debug symbols
-- `-D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE`: POSIX and GNU extensions
 - MPI compiler wrapper: `mpicc`
 
 ## Usage
@@ -552,6 +548,178 @@ results/run_<timestamp>/<matrix_name>/
 ├── stats_MPI_<matrix_name>.csv          # MPI results
 ├── stats_Serial_<matrix_name>.csv       # Serial baseline
 └── stats_openMP_Binning_<matrix_name>.csv  # OpenMP comparison
+```
+
+### Running Analysis Scripts
+
+After collecting benchmark results, you can analyze the performance using the provided analysis scripts.
+
+#### Automated Analysis (Recommended)
+
+Run all analysis scripts at once using the master script:
+
+```bash
+# Run all analyses with default settings
+./Run_MPI_analysis.sh
+
+# Specify custom results and output directories
+./Run_MPI_analysis.sh ./results ./plots
+
+# Use latest timestamped results
+./Run_MPI_analysis.sh ./results/run_<timestamp> ./plots
+```
+
+The script will automatically:
+1. Find the latest timestamped results directory
+2. Run communication overhead analysis for all matrices
+3. Perform strong scaling comparison (if at least 2 matrices available)
+4. Execute basic weak scaling analysis (if weak scaling matrices exist)
+5. Generate enhanced weak scaling reports with detailed metrics
+
+**Example Output:**
+```
+========================================
+   MPI Performance Analysis Suite
+========================================
+
+✓ Output directory: ./plots
+
+Configuration:
+  Results directory: ./results/run_20251116_142143
+  Output directory:  ./plots
+  Datasets directory: ./datasets
+  Percentile filter: 90th
+
+[1/4] Running Communication Overhead Analysis...
+  Analyzing: inline_1
+  Analyzing: largebasis
+  Analyzing: nd24k
+
+[2/4] Running Strong Scaling Analysis...
+  Comparing: inline_1 vs largebasis
+
+[3/4] Running Basic Weak Scaling Analysis...
+  Analyzing weak scaling results from: ./results/run_20251116_142143
+
+[4/4] Running Enhanced Weak Scaling Analysis...
+  Generating enhanced weak scaling report...
+
+========================================
+   Analysis Complete
+========================================
+
+✓ Results saved to: ./plots
+
+Generated files:
+  Plots:   12
+  Reports: 2
+  CSV:     4
+```
+
+#### Individual Analysis Scripts
+
+You can also run individual analysis scripts for specific analyses:
+
+**1. Communication Overhead Analysis**
+
+Analyzes MPI communication overhead as a function of processor count:
+
+```bash
+python3 scripts/mpi/analyze_communication_overhead.py \
+    results/run_20251116_142143/inline_1 \
+    plots \
+    90
+```
+
+**Arguments:**
+- `matrix_folder`: Path to the matrix results directory
+- `output_dir`: Output directory for plots (optional, default: current directory)
+- `percentile`: Percentile threshold for filtering outliers (optional, default: 80)
+
+**Outputs:**
+- `plot_comm_overhead_<matrix_name>.png`: Communication overhead vs processor count
+- Console summary with statistics
+
+**2. Strong Scaling Analysis**
+
+Compares strong scaling performance between two matrices:
+
+```bash
+python3 scripts/mpi/analyze_strong_scaling.py \
+    results/run_20251116_142143 \
+    inline_1 \
+    largebasis \
+    plots \
+    90
+```
+
+**Arguments:**
+- `data_path`: Directory containing matrix subdirectories
+- `matrix1`: First matrix name (folder name)
+- `matrix2`: Second matrix name (folder name)
+- `output_dir`: Output directory for plots (optional, default: current directory)
+- `percentile`: Percentile threshold (optional, default: 80)
+
+**Outputs:**
+- `plot_strong_scaling_comparison.png`: Side-by-side speedup comparison
+- Detailed analysis for each matrix
+
+**3. Basic Weak Scaling Analysis**
+
+Analyzes weak scaling performance across serial, OpenMP, and MPI implementations:
+
+```bash
+python3 scripts/mpi/analyze_weak_scaling.py \
+    results/run_20251116_142143 \
+    plots \
+    90
+```
+
+**Arguments:**
+- `data_path`: Directory containing `matrix_weak_scaling_*` subdirectories
+- `output_dir`: Output directory for plots (optional, default: current directory)
+- `percentile`: Percentile threshold (optional, default: 80)
+
+**Outputs:**
+- `plot_weak_scaling.png`: Execution time vs problem size for all implementations
+- Console summary with efficiency metrics
+
+**4. Enhanced Weak Scaling Analysis**
+
+Generates a comprehensive weak scaling report with detailed metrics:
+
+```bash
+python3 scripts/mpi/analyze_weak_scaling_spmv_enhanced.py \
+    results/run_20251116_142143 \
+    datasets \
+    plots \
+    90
+```
+
+**Arguments:**
+- `data_path`: Directory containing `matrix_weak_scaling_*` subdirectories
+- `datasets_dir`: Directory containing `.mtx` matrix files
+- `output_dir`: Output directory for reports (optional, default: current directory)
+- `percentile`: Percentile threshold (optional, default: 90)
+
+**Outputs:**
+- `weak_scaling_spmv_enhanced_report.md`: Comprehensive markdown report
+- `mpi_weak_scaling_processed.csv`: Processed MPI data
+- `omp_weak_scaling_processed.csv`: Processed OpenMP data
+- Console summary with efficiency analysis
+
+#### Requirements for Analysis Scripts
+
+Ensure you have the required Python packages:
+
+```bash
+pip install pandas numpy matplotlib scipy
+```
+
+Or use the provided requirements file (if available):
+
+```bash
+pip install -r requirements.txt
 ```
 
 ### Generated Plots
