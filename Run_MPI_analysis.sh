@@ -172,35 +172,5 @@ echo ""
 echo -e "${GREEN}✓${NC} Results saved to: $OUTPUT_DIR"
 echo ""
 
-# List generated files
-if [ -d "$OUTPUT_DIR" ]; then
-    NUM_PLOTS=$(find "$OUTPUT_DIR" -name "*.png" 2>/dev/null | wc -l)
-    NUM_REPORTS=$(find "$OUTPUT_DIR" -name "*.md" 2>/dev/null | wc -l)
-    NUM_CSV=$(find "$OUTPUT_DIR" -name "*.csv" 2>/dev/null | wc -l)
-
-    echo -e "${BLUE}Generated files:${NC}"
-    echo -e "  Plots:   $NUM_PLOTS"
-    echo -e "  Reports: $NUM_REPORTS"
-    echo -e "  CSV:     $NUM_CSV"
-    echo ""
-
-    # Show some example outputs
-    if [ $NUM_PLOTS -gt 0 ]; then
-        echo -e "${BLUE}Sample plots:${NC}"
-        find "$OUTPUT_DIR" -name "*.png" 2>/dev/null | head -n 3 | while read -r file; do
-            echo -e "  - $(basename "$file")"
-        done
-        echo ""
-    fi
-
-    if [ $NUM_REPORTS -gt 0 ]; then
-        echo -e "${BLUE}Reports:${NC}"
-        find "$OUTPUT_DIR" -name "*.md" 2>/dev/null | while read -r file; do
-            echo -e "  - $(basename "$file")"
-        done
-        echo ""
-    fi
-fi
-
 echo -e "${GREEN}Done!${NC}"
 
