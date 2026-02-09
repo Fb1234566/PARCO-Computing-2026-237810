@@ -321,7 +321,7 @@ ls -lh datasets/*.mtx
 qstat -u $USER
 
 # Check job output
-tail -f name.o<job_id>
+tail -f name.o
 ```
 
 The `Submit_jobs_mpi.sh` script will:
