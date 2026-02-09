@@ -232,6 +232,8 @@ datasets: $(LIST_FILE)
 	 esac; \
 	done < "$(LIST_FILE)"
 	@echo "Operation completed. Only .mtx files are available in $(DATASET_DIR)"
+	@echo "Creating synthetic matrices..."
+	@bash Create_synthetic_matrices.sh
 
 list-datasets: $(LIST_FILE)
 	@awk '!/^[[:space:]]*(#|$$)/ {print}' "$(LIST_FILE)"
