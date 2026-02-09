@@ -1,0 +1,109 @@
+#!/bin/bash
+# Job name
+#PBS -N name
+# Output files
+#PBS -o ./name.o
+#PBS -e ./name.e
+# Queue name
+#PBS -q short_cpuQ
+# Set the maximum wall time
+#PBS -l walltime=06:00:00
+# Number of nodes, cpus, mpi processors and amount of memory
+#PBS -l select=4:ncpus=64:mpiprocs=256:mem=25gb
+# Load modules required for build and MPI runtime
+module load gcc91
+module load mpich-3.2.1--gcc-9.1.0
+module load python-3.10.14
+
+# Optionally map gcc/g++ calls to specific module-provided binaries (preserve compiler wrappers)
+g++() {
+    g++-9.1.0 "$@"
+}
+
+gcc() {
+    gcc-9.1.0 "$@"
+}
+
+# Print versions for debugging
+g++ --version || true
+gcc --version || true
+
+# Print MPI compiler and runtime versions
+echo "=== MPI Compiler Version ==="
+mpicc --version || true
+echo ""
+
+echo "=== MPI Runtime Version ==="
+mpirun --version || mpiexec --version || true
+echo ""
+
+# Print OpenMP version (via compiler flag)
+echo "=== OpenMP Support ==="
+echo | g++ -fopenmp -dM -E - | grep -i openmp || echo "OpenMP version query failed"
+echo ""
+
+# Print CPU information
+echo "=== CPU Information ==="
+lscpu | grep -E "Model name|Architecture|CPU\(s\)|Thread|Core|Socket|NUMA" || cat /proc/cpuinfo | head -20
+echo ""
+
+# Ensure we execute from the job working directory
+cd "$PBS_O_WORKDIR"
+
+echo "PBS job running in: $(pwd)"
+
+# Print node file and compute number of MPI slots allocated
+if [ -n "${PBS_NODEFILE:-}" ] && [ -f "$PBS_NODEFILE" ]; then
+  echo "PBS_NODEFILE: $PBS_NODEFILE"
+  echo "Allocated nodes (raw):"
+  cat "$PBS_NODEFILE"
+  NPROC_ALLOC=$(wc -l < "$PBS_NODEFILE")
+  UNIQUE_NODES=$(sort -u "$PBS_NODEFILE")
+  echo "Unique nodes allocated: $UNIQUE_NODES"
+  echo "Total MPI slots allocated: $NPROC_ALLOC"
+else
+  echo "Warning: PBS_NODEFILE not found. Running in non-PBS environment or PBS_NODEFILE not set."
+  NPROC_ALLOC=1
+fi
+
+# Basic environment for OpenMP used inside MPI processes (if any)
+export OMP_PROC_BIND=close
+export OMP_PLACES=cores
+export OMP_DYNAMIC=false
+export OMP_WAIT_POLICY=active
+
+echo "Building binaries"
+make mpi
+make serial-only
+make openmp-static-only
+
+# Verify required environment variables passed by qsub
+if [ -z "${MATRIX:-}" ] || [ -z "${OUTPUT_DIR:-}" ] || [ -z "${GRAPH_DIR:-}" ]; then
+  echo "Usage: qsub -v MATRIX=<path>,OUTPUT_DIR=<outdir>,GRAPH_DIR=<plotdir> Run_MPI.pbs"
+  echo "One or more required variables (MATRIX, OUTPUT_DIR, GRAPH_DIR) are not set." >&2
+  exit 1
+fi
+
+# Ensure Python virtual environment exists for analysis scripts; create only if missing
+if [ ! -d "./.venv" ]; then
+  echo "Creating Python virtual environment in .venv"
+  python3 -m venv .venv || { echo "Failed to create venv"; exit 1; }
+  source .venv/bin/activate
+  pip install --upgrade pip
+  # Install minimal dependencies used by analysis scripts; tolerate failures
+  pip install numpy matplotlib pandas scipy || true
+  deactivate
+else
+  echo "Using existing Python virtualenv .venv"
+fi
+
+# Sanity: ensure Run_mpi.sh is executable
+if [ -f "./Run_mpi.sh" ] && [ ! -x "./Run_mpi.sh" ]; then
+  chmod +x ./Run_mpi.sh
+fi
+
+# Run the per-matrix runner which will execute serial baseline + MPI experiments
+echo "Starting Run_mpi.sh for matrix: $MATRIX"
+./Run_mpi.sh "$MATRIX" "$OUTPUT_DIR" "$GRAPH_DIR"
+
+echo "Run_MPI.pbs finished."

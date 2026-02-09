@@ -28,6 +28,8 @@ This project implements and benchmarks multiple parallel approaches for **Sparse
 using OpenMP. SpMV is a fundamental operation in scientific computing, appearing in iterative solvers, graph algorithms,
 and machine learning applications.
 
+> **Note**: For MPI implementation details and reproducibility steps, please refer to [README_MPI.md](README_MPI.md).
+
 The project compares:
 
 - **Serial Implementation**: Baseline sequential SpMV
